@@ -1,268 +1,199 @@
-﻿Public Class BattleshipConsole
+﻿
+Public Class BattleshipConsole
 
-    Private Class ConsoleTimer
-
-        Public Timer As Timers.Timer
-        Public Index As Integer
-        Private _delegate As EventHandler
-
-        Event TimerTick(index As Integer)
-
-        Sub New(interval As Double)
-
-            'Create the new timer with the correct details
-            Timer = New Timers.Timer(interval)
-            AddHandler Timer.Elapsed, AddressOf Tick
-            Timer.Enabled = True
-
-        End Sub
-
-        Private Sub Tick()
-
-            'Raise the event and return the index for them
-            RaiseEvent TimerTick(Index)
-
-        End Sub
-
-    End Class
-
-    Private Class ConsoleOverlayManager
-
-        'Here is a list of our overlays
-        'TODO: Fix terrible memory usage
-        Private _overlays As List(Of ConsoleCharacter(,))
-        Private _timers As List(Of ConsoleTimer)
-
-        Private _pause As Boolean = False
-
-        Sub New()
-
-            'Create our objects
-            _overlays = New List(Of ConsoleCharacter(,))
-            _timers = New List(Of ConsoleTimer)
-
-        End Sub
-
-        Private Sub TimerTick(index As Integer)
-
-            'Disable this timer first
-            _timers(index).Timer.Enabled = False
-
-            While _pause
-                'Waste some time here, it shouldn't ever cause a lock up
-                'TODO: Perhaps look at WaitOne functionality
-                Threading.Thread.Sleep(10)
-            End While
-
-            'Stop certain operations
-            _pause = True
-
-            'First reduce the index size
-            For i As Integer = index + 1 To _timers.Count - 1
-                _timers(i).Index -= 1
-            Next
-
-            'Remove the data
-            _overlays.RemoveAt(index)
-            _timers.RemoveAt(index)
-
-            'Restart those certain operations
-            _pause = False
-
-        End Sub
-
-        Private Function CutStrings(text As String, delimiter As String) As String()
-
-            If Not text Is Nothing Then
-
-                'If we have a background and foreground then do something
-                Dim lines() As String = text.Split("\n")
-
-                'Remove the extra characters
-                For i = 1 To lines.Length - 1
-                    lines(i) = lines(i).Remove(0, "\n".Length - 1)
-                Next
-
-                'Return our result
-                Return lines
-
-            Else
-
-                Return Nothing
-
-            End If
-
-        End Function
-
-        Private Sub CreateTimer(interval As Double)
-
-            'Create the timer object
-            Dim timer As New ConsoleTimer(interval)
-            AddHandler timer.TimerTick, AddressOf TimerTick
-            _timers.Add(timer)
-
-        End Sub
-
-        Public Sub AddText(x As Integer, y As Integer, interval As Double, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
-
-            'Add into our array
-            Dim overlay(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
-            Dim lines() As String = CutStrings(text, "\n")
-
-            For j = y To y + lines.Length - 1
-
-                For i = x To x + lines(j).Length - 1
-
-                    'Create a new object
-                    overlay(i, j) = New ConsoleCharacter(background, foreground)
-                    overlay(i, j).Character = text(i - x)
-
-                Next
-
-            Next
-
-            'Add in the new overlay
-            _overlays.Add(overlay)
-
-            'New timer
-            CreateTimer(interval)
-
-        End Sub
-
-        Public Sub AddOverlay(x As Integer, y As Integer, interval As Double, width As Integer, height As Integer, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
-
-            'Add into our array
-
-
-        End Sub
-
-        Public ReadOnly Property Overlay(index As Integer) As ConsoleCharacter(,)
-            Get
-                Return _overlays(index)
-            End Get
-        End Property
-
-        Public ReadOnly Property Count As Integer
-            Get
-                Return _overlays.Count
-            End Get
-        End Property
-
-    End Class
 
     Private Class ConsoleCharacter
 
-        Private _foregroundColour As ConsoleColor = -1
-        Private _backgroundColour As ConsoleColor = -1
-        Private _character As Char = ""
-        Private _update As Boolean = True
+        Private _background As ConsoleColor
+        Private _foreground As ConsoleColor
+        Private _character As Char
 
-        Public Property BackgroundColour As ConsoleColor
+
+        Sub New(background As ConsoleColor, foreground As ConsoleColor, Optional character As Char = " ")
+
+            'Set the defaults for this character
+            Me.Background = background
+            Me.Foreground = foreground
+            Me.Character = character
+
+        End Sub
+
+
+        Sub New(c As ConsoleCharacter)
+
+            'Copy the data from the new character
+            Me.Background = c.Background
+            Me.Foreground = c.Foreground
+            Me.Character = c.Character
+
+        End Sub
+
+
+        Public Shared Operator =(A As ConsoleCharacter, B As ConsoleCharacter) As Boolean
+
+            If A.Background = B.Background And
+                A.Foreground = B.Foreground And
+                A.Character = B.Character Then
+                Return True
+            Else
+                Return False
+            End If
+
+        End Operator
+
+
+        Public Shared Operator <>(A As ConsoleCharacter, B As ConsoleCharacter) As Boolean
+
+            Return Not (A = B)
+
+        End Operator
+
+
+        Public Property Background As ConsoleColor
             Set(value As ConsoleColor)
-                If value <> _backgroundColour Then
-                    _backgroundColour = value
-                    _update = True
+                '-1 is used for a transparent character (useful for overlays)
+                If value >= -1 And value <= 15 Then
+                    _background = value
                 End If
             End Set
             Get
-                Return _backgroundColour
+                Return _background
             End Get
         End Property
 
-        Public Property ForegroundColour As ConsoleColor
+
+        Public Property Foreground As ConsoleColor
             Set(value As ConsoleColor)
-                If value <> _foregroundColour Then
-                    _foregroundColour = value
-                    _update = True
+                '-1 is used for a unchanged character colour (useful for overlays)
+                If value >= -1 And value <= 15 Then
+                    _foreground = value
                 End If
             End Set
             Get
-                Return _foregroundColour
+                Return _foreground
             End Get
         End Property
+
 
         Public Property Character As Char
             Set(value As Char)
-                If _character <> value Then
-                    _character = value
-                    _update = True
-                End If
+                'Null characters are allowed, as they might be a blank spot)
+                _character = value
             End Set
             Get
                 Return _character
             End Get
         End Property
 
-        Public Property Update As Boolean
-            Set(value As Boolean)
-                _update = value
+
+    End Class
+
+
+    Public Class ConsolePosition
+
+        Private _x As Integer
+        Private _y As Integer
+
+
+        Sub New(Optional x As Integer = 0, Optional y As Integer = 0)
+
+            'Setup the default values
+            Me.X = x
+            Me.Y = y
+
+        End Sub
+
+
+        Public Property X As Integer
+            Set(value As Integer)
+                If value > 0 Then
+                    _x = value
+                End If
             End Set
             Get
-                Return _update
+                Return _x
             End Get
         End Property
 
-        Sub New(background As ConsoleColor, foreground As ConsoleColor)
-            BackgroundColour = background
-            ForegroundColour = foreground
+
+        Public Property Y As Integer
+            Set(value As Integer)
+                If value > 0 Then
+                    _y = value
+                End If
+            End Set
+            Get
+                Return _y
+            End Get
+        End Property
+
+
+    End Class
+
+
+    Private Class ConsoleBuffer
+
+
+        Private _content(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
+        Private _isOverlay As Boolean
+
+        Sub New(Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlay As Boolean = False)
+
+            'If the user wants to create a fresh buffer, otherwise leave it blank for better memory usage
+            If Not overlay Then
+
+                'Create new console characters
+                For i As Integer = 0 To CONSOLE_WIDTH - 1
+                    For j As Integer = 0 To CONSOLE_HEIGHT - 1
+                        _content(i, j) = New ConsoleCharacter(background, foreground)
+                    Next
+                Next
+            End If
+
+            'Ensure we remember this
+            _isOverlay = overlay
+
         End Sub
 
-        Public Sub Draw(x As Integer, y As Integer)
 
-            If Update Then
+        Public Sub CopyBuffer(buffer As ConsoleBuffer)
 
-                'Ensure the coords are in the bounds
-                If x >= 0 And x <= Console.BufferWidth Then
+            'Ensure we have a buffer object
+            If Not buffer Is Nothing Then
 
-                    If y >= 0 And y <= Console.BufferHeight Then
-                        'Setup the colours ay
-                        If ForegroundColour <> Console.ForegroundColor And ForegroundColour > -1 Then
-                            Console.ForegroundColor = ForegroundColour
+                'OK Start the copy!
+                For i = 0 To CONSOLE_WIDTH - 1
+                    For j = 0 To CONSOLE_HEIGHT - 1
+
+                        Dim overwrite As Boolean = False
+
+                        'Check if we should replace the character
+                        If Content(i, j) <> buffer.Content(i, j) Then
+                            overwrite = True
                         End If
 
-                        If BackgroundColour <> Console.BackgroundColor And BackgroundColour > -1 Then
-                            Console.BackgroundColor = BackgroundColour
-                        End If
+                        'Perform the overwrite
+                        If overwrite Then Content(i, j) = New ConsoleCharacter(buffer.Content(i, j))
 
-                        Console.SetCursorPosition(x, y)
-                        Console.Write(_character)
-                        _update = False
-                    End If
-
-                End If
+                    Next
+                Next
 
             End If
 
         End Sub
 
-    End Class
 
-    Private Class ConsoleBuffer
+        Private Function SplitString(text As String, Optional delimiter As String = "\n") As String()
 
-        Private _content As ConsoleCharacter(,)
-
-        Sub New(width As Integer, height As Integer, backgroundColour As ConsoleColor, foregroundColour As ConsoleColor)
-
-            'Create the new objects
-            For i = 0 To CONSOLE_WIDTH - 1
-                For j = 0 To CONSOLE_HEIGHT - 1
-                    _content(i, j) = New ConsoleCharacter(backgroundColour, foregroundColour)
-                Next
-            Next
-
-        End Sub
-
-
-        Private Function CutStrings(text As String, delimiter As String) As String()
-
+            'Cut the strings up and return them
             If Not text Is Nothing Then
 
                 'If we have a background and foreground then do something
-                Dim lines() As String = text.Split("\n")
+                Dim lines() As String = text.Split(delimiter)
 
                 'Remove the extra characters
                 For i = 1 To lines.Length - 1
-                    lines(i) = lines(i).Remove(0, "\n".Length - 1)
+                    lines(i) = lines(i).Remove(0, delimiter.Length - 1)
                 Next
 
                 'Return our result
@@ -279,99 +210,110 @@
 
         Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
 
-            Dim lines() As String = CutStrings(text, "\n")
+            'Split the strings first
+            Dim lines() As String = SplitString(text, "\n")
 
-            'Add the text in
             For j = y To y + lines.Length - 1
 
-                If j >= 0 And j < CONSOLE_HEIGHT Then
+                For i = x To x + lines(j - y).Length - 1
 
-                    For i = x To x + lines(j - y).Length - 1
+                    If InBounds(i, j) Then
 
-                        'Ensure we don't go over the buffer
-                        If i < CONSOLE_WIDTH Then
-
-                            'Check that we have an object
-                            If Content(i, j) Is Nothing Then Content(i, j) = New ConsoleCharacter(-1, -1)
-
-                            'Copy the data into the cell
-                            If foreground > -1 Then
-                                Content(i, j).ForegroundColour = foreground
+                        'Create a new object
+                        If Not _isOverlay Then
+                            If background = -1 Then
+                                background = Content(i, j).Background
                             End If
-                            If background > -1 Then
-                                Content(i, j).BackgroundColour = background
+                            If foreground Then
+                                foreground = Content(i, j).Foreground
                             End If
-                            Content(i, j).Character = lines(j - y)(i - x)
-
+                            Content(i, j).Background = background
+                            Content(i, j).Foreground = foreground
+                            Content(i, j).Character = lines(j)(i - x)
+                        Else
+                            Content(i, j) = New ConsoleCharacter(background, foreground, lines(j - y)(i - x))
                         End If
 
-                    Next
+                    End If
 
-                End If
+                Next
 
             Next
 
         End Sub
 
 
-        Public Sub DrawBorder(x As Integer, y As Integer, width As Integer, height As Integer, colour As ConsoleColor, Optional border As Integer = 1)
+        Public Sub DrawBorder(x As Integer, y As Integer,
+                              width As Integer, height As Integer,
+                              borderSize As Integer,
+                              borderColour As ConsoleColor)
 
+            '
             'Check we have good values
             If width > 0 And height > 0 Then
 
                 'Top border
-                For i = x To x + width
+                For i = x To x + width - 1
 
-                    For j = y To y + border - 1
+                    For j = y To y + borderSize - 1
 
                         'Draw the top line of the border
-                        If i >= 0 And i < CONSOLE_WIDTH And j >= 0 And j < CONSOLE_HEIGHT Then
-                            Content(i, j).BackgroundColour = colour
+                        If InBounds(i, j) Then
+                            Content(i, j).Background = borderColour
+                            If _isOverlay Then Content(i, j).Character = ""
                         End If
 
                     Next
 
                 Next
 
-                'Walls
-                For j = y + 1 To y + height - 1
+                'Ensure the height is bigger than 1
+                If height > 1 Then
 
-                    'Left wall
-                    For i = x To x + border - 1
+                    'Walls
+                    For j = y + 1 To y + height - 1
 
-                        If j >= 0 And j < CONSOLE_HEIGHT And i >= 0 And i < CONSOLE_WIDTH Then
-                            Content(i, j).BackgroundColour = colour
-                        End If
+                        'Left wall
+                        For i = x To x + borderSize - 1
 
-                    Next
+                            If InBounds(i, j) Then
+                                Content(i, j).Background = borderColour
+                                If _isOverlay Then Content(i, j).Character = ""
+                            End If
 
-                    'Right wall
-                    For i = x - (border - 1) To x
+                        Next
 
-                        If j >= 0 And j < CONSOLE_HEIGHT And i + width >= 0 And i + width < CONSOLE_WIDTH Then
-                            Content(i + width, j).BackgroundColour = colour
-                        End If
+                        'Right wall
+                        For i = x - (borderSize - 1) To x
 
-                    Next
-
-                Next
-
-                'If the border is larger, why bother
-                If width > border Then
-
-                    'Bottom border
-                    For i = x To x + width
-
-                        For j = y - (border - 1) To y
-
-                            'Draw the top line of the border
-                            If i >= 0 And i < CONSOLE_WIDTH And j + height >= 0 And j + height < CONSOLE_HEIGHT Then
-                                Content(i, j + height).BackgroundColour = colour
+                            If InBounds(i + width - 1, j) Then
+                                Content(i + width - 1, j).Background = borderColour
+                                If _isOverlay Then Content(i, j).Character = ""
                             End If
 
                         Next
 
                     Next
+
+                    'If the border is larger, why bother
+                    If width > borderSize Then
+
+                        'Bottom border
+                        For i = x To x + width - 1
+
+                            For j = y - (borderSize - 1) To y
+
+                                'Draw the top line of the border
+                                If InBounds(i, j + height - 1) Then
+                                    Content(i, j + height - 1).Background = borderColour
+                                    If _isOverlay Then Content(i, j).Character = ""
+                                End If
+
+                            Next
+
+                        Next
+
+                    End If
 
                 End If
 
@@ -380,18 +322,33 @@
         End Sub
 
 
-        Public Sub DrawSquare(x As Integer, y As Integer, width As Integer, height As Integer, fillColour As ConsoleColor, Optional drawBorder As Boolean = True, Optional borderSize As Integer = 0, Optional borderColour As ConsoleColor = ConsoleColor.Black)
+        Public Sub DrawSquare(x As Integer, y As Integer,
+                              width As Integer, height As Integer,
+                              background As ConsoleColor,
+                              Optional foreground As ConsoleColor = -1,
+                              Optional drawBorderAround As Boolean = False,
+                              Optional borderSize As Integer = 0,
+                              Optional borderColour As ConsoleColor = -1)
 
             'Draw the square first
-            For j = y To y + height
+            For j = y To y + height - 1
 
-                For i = x To x + width
+                For i = x To x + width - 1
 
-                    If j >= 0 And j < CONSOLE_HEIGHT And
-                        i >= 0 And i < CONSOLE_WIDTH Then
+                    If InBounds(i, j) Then
 
                         'Colour in the object
-                        Content(i, j).BackgroundColour = fillColour
+                        If background <> -1 Then
+                            Content(i, j).Background = background
+                        End If
+                        If foreground <> -1 Then
+                            Content(i, j).Foreground = foreground
+                        End If
+
+                        'If this is an overlay then null the character out (they can add text afterward)
+                        If _isOverlay Then
+                            Content(i, j).Character = ""
+                        End If
 
                     End If
 
@@ -400,253 +357,356 @@
             Next
 
             'Draw the border if they want one
-            If drawBorder Then
-                Me.DrawBorder(x, y, width, height, borderColour, borderSize)
+            If drawBorderAround Then
+                Me.DrawBorder(x, y, width, height, borderSize, borderColour)
             End If
 
         End Sub
 
 
-        Public Sub Draw()
+        Public Function InBounds(x As Integer, y As Integer) As Boolean
 
-            'Full draw
-            For i = 0 To _content.GetUpperBound(0) - 1
-                For j = 0 To _content.GetUpperBound(1) - 1
+            If x >= 0 And x <= _content.GetUpperBound(0) And
+                y >= 0 And y <= _content.GetUpperBound(1) Then
+                Return True
+            Else
+                Return False
+            End If
 
-                    'For some reason I can't draw the last character
-                    If i = _content.GetUpperBound(0) - 1 And j = _content.GetUpperBound(1) - 1 Then Exit For
-
-                    'Ensure we should still draw the character cell
-                    Content(i, j).Draw(i, j)
-
-                Next
-            Next
-
-        End Sub
-
-
-        Default Public Property Content(i As Integer, j As Integer) As ConsoleCharacter
-            Get
-                Return Content(New ConsolePosition(i, j))
-            End Get
-            Set(value As ConsoleCharacter)
-                Content(New ConsolePosition(i, j)) = value
-            End Set
-        End Property
+        End Function
 
 
         Default Public Property Content(pos As ConsolePosition) As ConsoleCharacter
             Get
-                If pos.X >= _content.GetLowerBound(0) And pos.X <= _content.GetUpperBound(0) And
-                    pos.Y >= _content.GetLowerBound(1) And pos.Y <= _content.GetUpperBound(1) Then
-                    Return _content(pos.X, pos.Y)
+                Return Content(pos.X, pos.Y)
+            End Get
+            Set(value As ConsoleCharacter)
+                Content(pos.X, pos.Y) = value
+            End Set
+        End Property
+
+
+        Default Public Property Content(i As Integer, j As Integer) As ConsoleCharacter
+            Get
+                'Ensure the coords in the bounds
+                If InBounds(i, j) Then
+                    Return _content(i, j)
                 Else
                     Return Nothing
                 End If
             End Get
             Set(value As ConsoleCharacter)
-                If pos.X >= _content.GetLowerBound(0) And pos.X <= _content.GetUpperBound(0) And
-                    pos.Y >= _content.GetLowerBound(1) And pos.Y <= _content.GetUpperBound(1) And
-                    Not value Is Nothing Then
-                    _content(pos.X, pos.Y) = value
+                If InBounds(i, j) Then
+                    _content(i, j) = value
                 End If
             End Set
         End Property
 
+
     End Class
 
-    Private Class ConsolePosition
 
-        Public X As Integer = 0
-        Public Y As Integer = 0
+    Private Class ConsoleOverlayManager
 
-        Sub New(Optional x As Integer = 0, Optional y As Integer = 0)
-            Me.X = x
-            Me.Y = y
+        Private _overlays As List(Of ConsoleBuffer)
+        Private _newOverlay As ConsoleBuffer
+
+        Sub New()
+
+            'Setup the object
+            _overlays = New List(Of ConsoleBuffer)
+
         End Sub
 
-    End Class
 
-    Private Class ConsoleRect
+        Public Sub StartOverlay()
 
-        Public X As Integer = 0
-        Public Y As Integer = 0
-        Public Width As Integer = 0
-        Public Height As Integer = 0
+            'Create a blank overlay
+            _newOverlay = New ConsoleBuffer(, , True)
 
-        Sub New(Optional x As Integer = 0, Optional y As Integer = 0, Optional width As Integer = 0, Optional height As Integer = 0)
-            Me.X = x
-            Me.Y = y
-            Me.Width = width
-            Me.Height = height
         End Sub
 
+
+        Public Sub FinishOverlay()
+
+            'OK, now add it on the list
+            _overlays.Add(_newOverlay)
+            _newOverlay = Nothing
+
+        End Sub
+
+
+        Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
+
+            'Write to the main buffer
+            If Not _newOverlay Is Nothing Then
+                _newOverlay.Write(x, y, text, background, foreground)
+            End If
+
+        End Sub
+
+
+        Public Sub DrawSquare(x As Integer, y As Integer,
+                              width As Integer, height As Integer,
+                              background As ConsoleColor,
+                              Optional foreground As ConsoleColor = -1,
+                              Optional drawBorderAround As Boolean = False,
+                              Optional borderSize As Integer = 0,
+                              Optional borderColour As ConsoleColor = -1)
+
+            'Draw the square to the overlay
+            If Not _newOverlay Is Nothing Then
+                _newOverlay.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+            End If
+
+        End Sub
+
+
+        Public Sub DrawBorder(x As Integer, y As Integer,
+                             width As Integer, height As Integer,
+                             borderSize As Integer,
+                             borderColour As ConsoleColor)
+
+            'Draw the border
+            If Not _newOverlay Is Nothing Then
+                _newOverlay.DrawBorder(x, y, width, height, borderSize, borderColour)
+            End If
+
+        End Sub
+
+
+        Public Function GetOverlayBuffer() As ConsoleBuffer
+
+            Dim result As New ConsoleBuffer(, , True)
+
+            'Go backwards as the top is most important
+            For overlay = _overlays.Count - 1 To 0 Step -1
+
+                For i = 0 To CONSOLE_WIDTH - 1
+                    For j = 0 To CONSOLE_HEIGHT - 1
+
+                        'See if the cell is something
+                        If Not _overlays(overlay)(i, j) Is Nothing Then
+
+                            'Add it to our new return buffer
+                            If result(i, j) Is Nothing Then
+                                result(i, j) = New ConsoleCharacter(_overlays(overlay)(i, j))
+                            Else
+                                'Copy if any cells are empty
+                                If result(i, j).Background = -1 Then
+                                    result(i, j).Background = _overlays(overlay)(i, j).Background
+                                End If
+                                If result(i, j).Foreground = -1 Then
+                                    result(i, j).Foreground = _overlays(overlay)(i, j).Foreground
+                                End If
+                                If result(i, j).Character = "" Then
+                                    result(i, j).Character = _overlays(overlay)(i, j).Character
+                                End If
+                            End If
+
+                        End If
+
+                    Next
+                Next
+
+            Next
+
+            'The overlay is finished, return it
+            Return result
+
+        End Function
+
+
+        Public Sub RemoveOverlay(index As Integer)
+
+            'Remove the bloody overlay ay
+            If index >= 0 And index < _overlays.Count Then
+                _overlays.RemoveAt(index)
+            End If
+
+        End Sub
+
+
     End Class
 
 
-    Private Const CONSOLE_WIDTH As Integer = 80
-    Private Const CONSOLE_HEIGHT As Integer = 26
+    'Start of BattleshipConsole
+    Public Const CONSOLE_WIDTH As Integer = 80
+    Public Const CONSOLE_HEIGHT As Integer = 26
 
-    'Contents of the console display
-    Private _primaryBuffer As ConsoleBuffer
+    Private _mainBuffer As ConsoleBuffer
+    Private _buffers(1) As ConsoleBuffer
+    Private _currentBuffer As Integer = 0
 
-    Private _overlayObjects As ConsoleOverlayManager
+    Private _overlayManager As ConsoleOverlayManager
 
     Private _backgroundColour As ConsoleColor
     Private _foregroundColour As ConsoleColor
     Private _cursorColour As ConsoleColor
 
-    Private _cursor As ConsolePosition
-    Private _cursorBounds As ConsoleRect
-    Private _pauseRefresh As Boolean = False
 
-    Public Event OnEnterPressed()
+    Sub New(background As ConsoleColor, foreground As ConsoleColor, cursor As ConsoleColor)
 
-    Sub New(Optional background As ConsoleColor = ConsoleColor.Black, Optional foreground As ConsoleColor = ConsoleColor.Gray, Optional cursor As ConsoleColor = ConsoleColor.Red)
-
-        'Set the colours
+        'Setup the variable details
         _backgroundColour = background
         _foregroundColour = foreground
         _cursorColour = cursor
 
-        'Create the new objects
-        _primaryBuffer = New ConsoleBuffer(CONSOLE_WIDTH, CONSOLE_HEIGHT, background, foreground)
+        'Create new buffers
+        _mainBuffer = New ConsoleBuffer(_backgroundColour, _foregroundColour)
+        _buffers(0) = New ConsoleBuffer(_backgroundColour, _foregroundColour)
+        _buffers(1) = New ConsoleBuffer(_backgroundColour, _foregroundColour)
 
-        _cursor = New ConsolePosition()
-        _cursorBounds = New ConsoleRect(0, 0, CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1)
-        _overlayObjects = New ConsoleOverlayManager
+        'Setup the overlay objects
+        _overlayManager = New ConsoleOverlayManager()
 
-        'Other default settings
-        Console.SetBufferSize(CONSOLE_WIDTH, CONSOLE_HEIGHT)
+        'Setup the console object
         Console.CursorVisible = False
-
-        'Refresh the screen and set the cursor
-        Me.Refresh()
+        Console.SetBufferSize(CONSOLE_WIDTH, CONSOLE_HEIGHT)
+        Console.BackgroundColor = _backgroundColour
+        Console.ForegroundColor = _foregroundColour
+        Console.Clear()
 
     End Sub
+
+
+    Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
+
+        'Write to the main buffer
+        _mainBuffer.Write(x, y, text, background, foreground)
+
+    End Sub
+
+
+    Public Sub StartOverlay()
+
+        'Start the new overlay
+        _overlayManager.StartOverlay()
+
+    End Sub
+
+
+    Public Sub FinishOverlay()
+
+        'Finalise the overlay
+        _overlayManager.FinishOverlay()
+
+    End Sub
+
+
+    Public Sub WriteOverlay(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
+
+        'Push a new overlay on
+        _overlayManager.Write(x, y, text, background, foreground)
+
+    End Sub
+
+
+    Public Sub DrawSquareOverlay(x As Integer, y As Integer,
+                              width As Integer, height As Integer,
+                              background As ConsoleColor,
+                              Optional foreground As ConsoleColor = -1,
+                              Optional drawBorderAround As Boolean = False,
+                              Optional borderSize As Integer = 0,
+                              Optional borderColour As ConsoleColor = -1)
+
+        'Draw the square
+        _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+
+    End Sub
+
+
+    Public Sub DrawSquare(x As Integer, y As Integer,
+                              width As Integer, height As Integer,
+                              background As ConsoleColor,
+                              Optional foreground As ConsoleColor = -1,
+                              Optional drawBorderAround As Boolean = False,
+                              Optional borderSize As Integer = 0,
+                              Optional borderColour As ConsoleColor = -1)
+
+        'Just draw the square!!!!
+        _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+
+    End Sub
+
+
+    Public Sub DrawBorder(x As Integer, y As Integer,
+                             width As Integer, height As Integer,
+                             borderSize As Integer,
+                             borderColour As ConsoleColor)
+
+        'Draw the border 
+        _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
+
+    End Sub
+
 
     Public Sub Refresh()
 
-        'do they want to stifle the refreshing
-        If Not _pauseRefresh Then
+        'TODO: Improve on this sub, draw overlays, control cursor
 
-            'Draw the primary buffer
-            _primaryBuffer.Draw()
+        'Bring all the buffers together into the current buffer
+        ConsolidateBuffers()
 
-            'TODO: Increase efficiency by checking if top overlay has character before drawing again
-            'TODO: Perhaps an array of boolean and walk through overlay's backwards
-            Dim skip As Boolean = False
+        'Refresh the screen using the current buffer
+        For i = 0 To CONSOLE_WIDTH - 1
+            For j = 0 To CONSOLE_HEIGHT - 1
 
-            'Go through our overlays to see if we have anything
-            For overlayIndex = 0 To _overlayObjects.Count - 1
-                'Check that the character is actually an object, and set the char update as well
-                'If Not _overlayObjects.Overlay(overlayIndex)(i, j) Is Nothing Then
-                '    _overlayObjects.Overlay(overlayIndex)(i, j).Draw(i, j)
-                '    _primaryBuffer(i, j).Update = True
-                '    skip = True
-                'End If
+                'Never draw the last cell, as it will wrap to the top of the screen and wipe the top left cell
+                'TODO: See if we can avoid this issue
+                If i = CONSOLE_WIDTH - 1 And j = CONSOLE_HEIGHT - 1 Then
+                    Exit For
+                End If
+
+                If _buffers(_currentBuffer)(i, j) <> _buffers(1 - _currentBuffer)(i, j) Then
+                    Console.SetCursorPosition(i, j)
+
+                    'Draw the character
+                    Console.ForegroundColor = _buffers(_currentBuffer)(i, j).Foreground
+                    Console.BackgroundColor = _buffers(_currentBuffer)(i, j).Background
+                    Console.Write(_buffers(_currentBuffer)(i, j).Character)
+
+                End If
+
             Next
+        Next
 
-            'Draw the cursor
-            Console.SetCursorPosition(_cursor.X, _cursor.Y)
-            Console.BackgroundColor = CursorColour
-            Console.ForegroundColor = _primaryBuffer(_cursor).ForegroundColour
-            Console.Write(_primaryBuffer(_cursor).Character)
-            Console.SetCursorPosition(_cursor.X, _cursor.Y)
-
-        End If
+        'Switch the buffers
+        _currentBuffer = 1 - _currentBuffer
 
     End Sub
 
-    Public Sub WriteOverlay()
 
-        _overlayObjects.AddText(0, 0, 500, "text")
+    Private Sub ConsolidateBuffers()
 
-        Me.Refresh()
+        'Add the mainbuffer into the current buffer
+        _buffers(_currentBuffer).CopyBuffer(_mainBuffer)
+
+        'Grab the overlay object and integrate that
+        Dim overlayBuffer As ConsoleBuffer = _overlayManager.GetOverlayBuffer()
+
+        'Now time to bring them together
+        For i = 0 To CONSOLE_WIDTH - 1
+            For j = 0 To CONSOLE_HEIGHT - 1
+
+                'Ensure there is an overlay
+                If Not overlayBuffer(i, j) Is Nothing Then
+                    'Only take what has changed
+                    If overlayBuffer(i, j).Background <> -1 Then
+                        _buffers(_currentBuffer)(i, j).Background = overlayBuffer(i, j).Background
+                    End If
+                    If overlayBuffer(i, j).Foreground <> -1 Then
+                        _buffers(_currentBuffer)(i, j).Foreground = overlayBuffer(i, j).Foreground
+                    End If
+                    If overlayBuffer(i, j).Character <> "" Then
+                        _buffers(_currentBuffer)(i, j).Character = overlayBuffer(i, j).Character
+                    End If
+                End If
+
+            Next
+        Next
 
     End Sub
 
-    Public Sub CursorMovement()
-
-        'Wait for the keypress
-        Dim key As ConsoleKeyInfo = Console.ReadKey
-
-        'Ensure it's an arrow key
-        If key.Key >= 37 And key.Key <= 40 Then
-
-            'Force the update
-            _primaryBuffer(_cursor).Update = True
-
-            'Change it's position
-            If key.Key = ConsoleKey.UpArrow Then
-                If _cursor.Y > 0 Then
-                    _cursor.Y -= 1
-                End If
-            ElseIf key.Key = ConsoleKey.DownArrow Then
-                If _cursor.Y < CONSOLE_HEIGHT - 1 Then
-                    _cursor.Y += 1
-                End If
-            ElseIf key.Key = ConsoleKey.LeftArrow Then
-                If _cursor.X > 0 Then
-                    _cursor.X -= 1
-                End If
-            ElseIf key.Key = ConsoleKey.RightArrow Then
-                If _cursor.X < CONSOLE_WIDTH - 1 Then
-                    _cursor.X += 1
-                End If
-            End If
-
-        End If
-
-        'If they pressed enter, tell the developer
-        If key.Key = ConsoleKey.Enter Then
-            RaiseEvent OnEnterPressed()
-        End If
-
-        Me.Refresh()
-
-    End Sub
-
-    Public Property CursorColour As ConsoleColor
-        Set(value As ConsoleColor)
-            If value >= 0 And value <= ConsoleColor.White Then
-                _cursorColour = value
-            End If
-        End Set
-        Get
-            Return _cursorColour
-        End Get
-    End Property
-
-    Public Property BackgroundColour As ConsoleColor
-        Set(value As ConsoleColor)
-            If value >= 0 And value <= ConsoleColor.White Then
-                _backgroundColour = value
-            End If
-        End Set
-        Get
-            Return _backgroundColour
-        End Get
-    End Property
-
-    Public Property ForegroundColour As ConsoleColor
-        Set(value As ConsoleColor)
-            If value >= 0 And value <= ConsoleColor.White Then
-                _foregroundColour = value
-            End If
-        End Set
-        Get
-            Return _foregroundColour
-        End Get
-    End Property
-
-    Public Property PauseRefresh() As Boolean
-        Set(value As Boolean)
-            _pauseRefresh = value
-        End Set
-        Get
-            Return _pauseRefresh
-        End Get
-    End Property
 
 End Class
