@@ -1,5 +1,4 @@
-﻿
-Public Class BattleshipConsole
+﻿Public Class BattleshipConsole
 
 
     Private Class ConsoleCharacter
@@ -9,7 +8,7 @@ Public Class BattleshipConsole
         Private _character As Char
 
 
-        Sub New(background As ConsoleColor, foreground As ConsoleColor, Optional character As Char = " ")
+        Sub New(Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional character As Char = "")
 
             'Set the defaults for this character
             Me.Background = background
@@ -89,7 +88,7 @@ Public Class BattleshipConsole
     End Class
 
 
-    Public Class ConsolePosition
+    Private Class ConsolePosition
 
         Private _x As Integer
         Private _y As Integer
@@ -136,6 +135,7 @@ Public Class BattleshipConsole
 
         Private _content(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
         Private _isOverlay As Boolean
+
 
         Sub New(Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlay As Boolean = False)
 
@@ -231,7 +231,14 @@ Public Class BattleshipConsole
                             Content(i, j).Foreground = foreground
                             Content(i, j).Character = lines(j)(i - x)
                         Else
-                            Content(i, j) = New ConsoleCharacter(background, foreground, lines(j - y)(i - x))
+                            'Check if the object exists first
+                            If Content(i, j) Is Nothing Then
+                                Content(i, j) = New ConsoleCharacter(background, foreground, lines(j - y)(i - x))
+                            Else
+                                Content(i, j).Background = background
+                                Content(i, j).Foreground = foreground
+                                Content(i, j).Character = lines(j - y)(i - x)
+                            End If
                         End If
 
                     End If
@@ -336,6 +343,8 @@ Public Class BattleshipConsole
                 For i = x To x + width - 1
 
                     If InBounds(i, j) Then
+
+                        If Content(i, j) Is Nothing Then Content(i, j) = New ConsoleCharacter()
 
                         'Colour in the object
                         If background <> -1 Then
@@ -578,6 +587,13 @@ Public Class BattleshipConsole
     End Sub
 
 
+    Public Sub RemoveOverlay()
+
+        _overlayManager.RemoveOverlay(0)
+
+    End Sub
+
+
     Public Sub StartOverlay()
 
         'Start the new overlay
@@ -643,7 +659,7 @@ Public Class BattleshipConsole
 
     Public Sub Refresh()
 
-        'TODO: Improve on this sub, draw overlays, control cursor
+        'TODO: control cursor
 
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()

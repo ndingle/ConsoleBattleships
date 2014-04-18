@@ -5,11 +5,13 @@
     Sub Main()
 
         'Setup the objects
-        test.DrawSquare(0, 0, 5, 5, ConsoleColor.White, , True, 1, ConsoleColor.Black)
+        test.DrawSquare(0, 0, 30, 25, ConsoleColor.White, , True, 1, ConsoleColor.Black)
         test.StartOverlay()
-        test.DrawSquare(0, 0, 80, 25, ConsoleColor.Red, ConsoleColor.Black)
         test.WriteOverlay(10, 2, "Something happened...", ConsoleColor.Black, ConsoleColor.Red)
         test.FinishOverlay()
+        test.Refresh()
+        Console.ReadLine()
+        test.RemoveOverlay()
         test.Refresh()
         Console.ReadLine()
         
