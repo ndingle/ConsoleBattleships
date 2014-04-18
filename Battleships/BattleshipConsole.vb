@@ -105,7 +105,7 @@
 
         Public Property X As Integer
             Set(value As Integer)
-                If value > 0 Then
+                If value >= 0 Then
                     _x = value
                 End If
             End Set
@@ -117,7 +117,7 @@
 
         Public Property Y As Integer
             Set(value As Integer)
-                If value > 0 Then
+                If value >= 0 Then
                     _y = value
                 End If
             End Set
@@ -548,6 +548,9 @@
     Private _currentBuffer As Integer = 0
 
     Private _overlayManager As ConsoleOverlayManager
+    Private _cursorPosition As ConsolePosition
+    Private _cursorMinimum As ConsolePosition
+    Private _cursorMaximum As ConsolePosition
 
     Private _backgroundColour As ConsoleColor
     Private _foregroundColour As ConsoleColor
@@ -566,8 +569,11 @@
         _buffers(0) = New ConsoleBuffer(_backgroundColour, _foregroundColour)
         _buffers(1) = New ConsoleBuffer(_backgroundColour, _foregroundColour)
 
-        'Setup the overlay objects
+        'Setup other objects
         _overlayManager = New ConsoleOverlayManager()
+        _cursorPosition = New ConsolePosition()
+        _cursorMinimum = New ConsolePosition(0, 0)
+        _cursorMaximum = New ConsolePosition(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1)
 
         'Setup the console object
         Console.CursorVisible = False
@@ -583,6 +589,7 @@
 
         'Write to the main buffer
         _mainBuffer.Write(x, y, text, background, foreground)
+        Me.Refresh()
 
     End Sub
 
@@ -590,6 +597,7 @@
     Public Sub RemoveOverlay()
 
         _overlayManager.RemoveOverlay(0)
+        Me.Refresh()
 
     End Sub
 
@@ -606,6 +614,7 @@
 
         'Finalise the overlay
         _overlayManager.FinishOverlay()
+        Me.Refresh()
 
     End Sub
 
@@ -643,6 +652,9 @@
         'Just draw the square!!!!
         _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
 
+        'Ensure we don't do two refresh calls
+        If Not drawBorderAround Then Me.Refresh()
+
     End Sub
 
 
@@ -653,13 +665,96 @@
 
         'Draw the border 
         _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
+        Me.Refresh()
+
+    End Sub
+
+
+    Public Sub MoveCursorUntilKeyPress(acceptedKeys() As ConsoleKey)
+
+        'Use the move cursor position until one of the approved keys is pressed
+        Dim moving As Boolean = True
+
+        If Not acceptedKeys Is Nothing Then
+
+            If acceptedKeys.Count > 0 Then
+
+                While moving
+
+                    'Move one space
+                    Dim key As ConsoleKey = MoveCursor()
+
+                    'Check if they pressed a good key
+                    For Each accepted As ConsoleKey In acceptedKeys
+                        If key = accepted Then moving = False
+                    Next
+
+                End While
+
+            End If
+
+        End If
+
+    End Sub
+
+
+    Public Function MoveCursor() As ConsoleKey
+
+        'Allow the user to move the cursor one space
+        Dim key As ConsoleKey = Console.ReadKey.Key
+
+        'Do we move the cursor?
+        Select Case key
+            Case ConsoleKey.UpArrow
+                If _cursorPosition.Y > _cursorMinimum.Y Then _cursorPosition.Y -= 1
+            Case ConsoleKey.DownArrow
+                If _cursorPosition.Y < _cursorMaximum.Y Then _cursorPosition.Y += 1
+            Case ConsoleKey.LeftArrow
+                If _cursorPosition.X > _cursorMinimum.X Then _cursorPosition.X -= 1
+            Case ConsoleKey.RightArrow
+                If _cursorPosition.X < _cursorMaximum.X Then _cursorPosition.X += 1
+        End Select
+
+        Me.Refresh()
+
+        Return key
+
+    End Function
+
+
+    Public Sub SetCursorMinimum(x As Integer, y As Integer)
+
+        'Set the mimium coords of the cursor
+        If x >= 0 And x < CONSOLE_WIDTH Then
+            _cursorMinimum.X = x
+            If _cursorPosition.X < x Then _cursorPosition.X = x
+        End If
+
+        If y >= 0 And y < CONSOLE_HEIGHT Then
+            _cursorMinimum.Y = y
+            If _cursorPosition.Y < y Then _cursorPosition.Y = y
+        End If
+
+    End Sub
+
+
+    Public Sub SetCursorMaximum(x As Integer, y As Integer)
+
+        'Set the mimium coords of the cursor
+        If x >= 0 And x < CONSOLE_WIDTH Then
+            _cursorMaximum.X = x
+            If _cursorPosition.X > x Then _cursorPosition.X = x
+        End If
+
+        If y >= 0 And y < CONSOLE_HEIGHT Then
+            _cursorMaximum.Y = y
+            If _cursorPosition.Y > y Then _cursorPosition.Y = y
+        End If
 
     End Sub
 
 
     Public Sub Refresh()
-
-        'TODO: control cursor
 
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()
@@ -668,13 +763,8 @@
         For i = 0 To CONSOLE_WIDTH - 1
             For j = 0 To CONSOLE_HEIGHT - 1
 
-                'Never draw the last cell, as it will wrap to the top of the screen and wipe the top left cell
-                'TODO: See if we can avoid this issue
-                If i = CONSOLE_WIDTH - 1 And j = CONSOLE_HEIGHT - 1 Then
-                    Exit For
-                End If
-
                 If _buffers(_currentBuffer)(i, j) <> _buffers(1 - _currentBuffer)(i, j) Then
+
                     Console.SetCursorPosition(i, j)
 
                     'Draw the character
@@ -686,6 +776,9 @@
 
             Next
         Next
+
+        'Set the new position and move on, ay
+        Console.SetCursorPosition(_cursorPosition.X, _cursorPosition.Y)
 
         'Switch the buffers
         _currentBuffer = 1 - _currentBuffer
@@ -707,7 +800,7 @@
 
                 'Ensure there is an overlay
                 If Not overlayBuffer(i, j) Is Nothing Then
-                    'Only take what has changed
+                    'Only take what has a value
                     If overlayBuffer(i, j).Background <> -1 Then
                         _buffers(_currentBuffer)(i, j).Background = overlayBuffer(i, j).Background
                     End If
@@ -721,6 +814,10 @@
 
             Next
         Next
+
+        'Set the cursor position and negate the other buffer so it always gets drawn
+        _buffers(_currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = _cursorColour
+        _buffers(1 - _currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = -1
 
     End Sub
 
