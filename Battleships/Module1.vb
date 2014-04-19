@@ -9,8 +9,9 @@
         test.SetCursorMinimum(1, 1)
         test.SetCursorMaximum(28, 23)
         test.Refresh()
-        test.MoveCursorUntilKeyPress(New ConsoleKey() {ConsoleKey.Enter})
+        MsgBox(test.ReadLine())
         test.Refresh()
+        Console.ReadLine()
         
     End Sub
 

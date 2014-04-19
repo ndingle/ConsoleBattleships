@@ -229,7 +229,7 @@
                             End If
                             Content(i, j).Background = background
                             Content(i, j).Foreground = foreground
-                            Content(i, j).Character = lines(j)(i - x)
+                            Content(i, j).Character = lines(j - y)(i - x)
                         Else
                             'Check if the object exists first
                             If Content(i, j) Is Nothing Then
@@ -526,6 +526,23 @@
         End Function
 
 
+        Public Function AddToTopOverlay(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1) As Boolean
+
+            'Add some text to the top overlay only
+            If _overlays.Count > 0 Then
+
+                'Add to the overlay on the top
+                _overlays(_overlays.Count - 1).Write(x, y, text, background, foreground)
+                Return True
+
+            Else
+                'No overlays to work with
+                Return False
+            End If
+
+        End Function
+
+
         Public Sub RemoveOverlay(index As Integer)
 
             'Remove the bloody overlay ay
@@ -698,10 +715,11 @@
     End Sub
 
 
-    Public Function MoveCursor() As ConsoleKey
+    Public Function MoveCursor(Optional autoKey As ConsoleKey = -1) As ConsoleKey
 
         'Allow the user to move the cursor one space
-        Dim key As ConsoleKey = Console.ReadKey.Key
+        Dim key As ConsoleKey = autoKey
+        If autoKey = -1 Then key = Console.ReadKey.Key
 
         'Do we move the cursor?
         Select Case key
@@ -752,6 +770,62 @@
         End If
 
     End Sub
+
+
+    Public Sub SetCursorPosition(x As Integer, y As Integer)
+
+        'Manually set the location of the cursor
+        If x >= _cursorMinimum.X And x <= _cursorMaximum.X And
+            y >= _cursorMinimum.Y And y <= _cursorMaximum.Y Then
+            _cursorPosition.X = x
+            _cursorPosition.Y = y
+            Me.Refresh()
+        End If
+
+    End Sub
+
+
+    Public Function ReadKey(Optional moveCursor As Boolean = False) As ConsoleKeyInfo
+
+        'Read a single key and return it's value
+        Dim key As ConsoleKeyInfo = Console.ReadKey(True)
+
+        'Add to buffer
+        If Not _overlayManager.AddToTopOverlay(_cursorPosition.X, _cursorPosition.Y, key.KeyChar) Then
+            _mainBuffer.Write(_cursorPosition.X, _cursorPosition.Y, key.KeyChar)
+        End If
+
+        'Move the cursor if they want
+        If moveCursor And key.Key <> ConsoleKey.Enter Then
+            Me.MoveCursor(ConsoleKey.RightArrow)
+        End If
+
+        'Refresh the screen
+        Me.Refresh()
+
+        Return key
+
+    End Function
+
+
+    Public Function ReadLine() As String
+
+        'Use the readkey and wait until the enter key
+        Dim key As ConsoleKeyInfo
+        Dim text As String = ""
+
+        'Loop until we get the enter key
+        Do
+
+            'Get a key and move onward
+            key = ReadKey(True)
+            text &= key.KeyChar
+
+        Loop Until key.Key = ConsoleKey.Enter
+
+        Return text
+
+    End Function
 
 
     Public Sub Refresh()
