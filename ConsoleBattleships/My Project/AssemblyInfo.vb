@@ -8,17 +8,17 @@ Imports System.Runtime.InteropServices
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("Battleships")> 
+<Assembly: AssemblyTitle("ConsoleBattleships")> 
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("")> 
-<Assembly: AssemblyProduct("Battleships")> 
+<Assembly: AssemblyProduct("ConsoleBattleships")> 
 <Assembly: AssemblyCopyright("Copyright ©  2014")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>
 
 'The following GUID is for the ID of the typelib if this project is exposed to COM
-<Assembly: Guid("03a19b2d-b113-44eb-bef9-22bfb53a8cde")> 
+<Assembly: Guid("a58c1ea1-85e7-4f99-b43b-41cbf0870ef5")> 
 
 ' Version information for an assembly consists of the following four values:
 '

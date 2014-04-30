@@ -88,13 +88,13 @@
     End Class
 
 
-    Private Class ConsolePosition
+    Public Class ConsolePosition
 
         Private _x As Integer
         Private _y As Integer
 
 
-        Sub New(Optional x As Integer = 0, Optional y As Integer = 0)
+        Sub New(Optional ByVal x As Integer = 0, Optional ByVal y As Integer = 0)
 
             'Setup the default values
             Me.X = x
@@ -104,7 +104,7 @@
 
 
         Public Property X As Integer
-            Set(value As Integer)
+            Set(ByVal value As Integer)
                 If value >= 0 Then
                     _x = value
                 End If
@@ -116,7 +116,7 @@
 
 
         Public Property Y As Integer
-            Set(value As Integer)
+            Set(ByVal value As Integer)
                 If value >= 0 Then
                     _y = value
                 End If
