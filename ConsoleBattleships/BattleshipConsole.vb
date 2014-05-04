@@ -103,6 +103,25 @@
         End Sub
 
 
+        Public Shared Operator =(A As ConsolePosition, B As ConsolePosition) As Boolean
+
+            If A.X = B.X And
+                A.Y = B.Y Then
+                Return True
+            Else
+                Return False
+            End If
+
+        End Operator
+
+
+        Public Shared Operator <>(A As ConsolePosition, B As ConsolePosition) As Boolean
+
+            Return Not (A = B)
+
+        End Operator
+
+
         Public Property X As Integer
             Set(ByVal value As Integer)
                 If value >= 0 Then
@@ -561,6 +580,11 @@
         End Sub
 
 
+        Public Function Count() As Integer
+            Return _overlays.Count
+        End Function
+
+
     End Class
 
 
@@ -631,7 +655,7 @@
 
     Public Sub RemoveLastOverlay()
 
-        _overlayManager.RemoveOverlay(0)
+        _overlayManager.RemoveOverlay(_overlayManager.count - 1)
         If _autoRefresh Then Me.Refresh()
 
     End Sub
@@ -842,8 +866,6 @@
 
 
     Public Sub Refresh()
-
-        'TODO: Fix cursor overlay bug
 
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()

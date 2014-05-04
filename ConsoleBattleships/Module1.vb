@@ -56,41 +56,33 @@
         End Select
         gfx.FinishOverlay()
 
+    End Sub
+
+
+    Sub PlayerSetup(index As Integer)
+
+        'Setup the ships for the first character
+        gfx.Write(1, 13, "Player " & index & " Ship Setup", , ConsoleColor.Black)
+
+        gfx.SetCursorMinimum(1, 1)
+        gfx.SetCursorMaximum(10, 10)
+        gfx.SetCursorPosition(1, 1)
+
+        ShipSetup(index, 2)
+        ShipSetup(index, 3)
+        ShipSetup(index, 3)
+        ShipSetup(index, 4)
+        ShipSetup(index, 5)
+
+        gfx.RemoveAllOverlays()
 
     End Sub
 
 
-    Sub PlayerSetup()
+    Sub PlayersSetup()
 
-        'Setup the ships for the first character
-        gfx.Write(1, 13, "Player 1 Ship Setup", , ConsoleColor.Black)
-
-        gfx.SetCursorMinimum(1, 1)
-        gfx.SetCursorMaximum(10, 10)
-        gfx.SetCursorPosition(1, 1)
-
-        ShipSetup(1, 2)
-        ShipSetup(1, 3)
-        ShipSetup(1, 3)
-        ShipSetup(1, 4)
-        ShipSetup(1, 5)
-
-        gfx.RemoveAllOverlays()
-
-        '
-        gfx.Write(1, 13, "Player 2 Ship Setup", , ConsoleColor.Black)
-
-        gfx.SetCursorMinimum(1, 1)
-        gfx.SetCursorMaximum(10, 10)
-        gfx.SetCursorPosition(1, 1)
-
-        ShipSetup(2, 2)
-        ShipSetup(2, 3)
-        ShipSetup(2, 3)
-        ShipSetup(2, 4)
-        ShipSetup(2, 5)
-
-        gfx.RemoveAllOverlays()
+        PlayerSetup(1)
+        PlayerSetup(2)
 
     End Sub
 
@@ -99,7 +91,7 @@
 
         'Setup the objects
         DrawSea()
-        PlayerSetup()
+        PlayersSetup()
 
         gfx.MoveCursorUntilKeyPress(New ConsoleKey() {ConsoleKey.Enter})
         
