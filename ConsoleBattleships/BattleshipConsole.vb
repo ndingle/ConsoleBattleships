@@ -553,6 +553,14 @@
         End Sub
 
 
+        Public Sub RemoveAllOverlays()
+
+            'Rmove all of the overlays
+            _overlays.Clear()
+
+        End Sub
+
+
     End Class
 
 
@@ -562,6 +570,9 @@
 
     Private _mainBuffer As ConsoleBuffer
     Private _buffers(1) As ConsoleBuffer
+    Private _autoRefresh As Boolean
+    Private _drawCursor As Boolean
+    Private _drawingOverlay As Boolean
     Private _currentBuffer As Integer = 0
 
     Private _overlayManager As ConsoleOverlayManager
@@ -580,6 +591,9 @@
         _backgroundColour = background
         _foregroundColour = foreground
         _cursorColour = cursor
+        _autoRefresh = True
+        _drawCursor = True
+        _drawingOverlay = False
 
         'Create new buffers
         _mainBuffer = New ConsoleBuffer(_backgroundColour, _foregroundColour)
@@ -605,16 +619,27 @@
     Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
 
         'Write to the main buffer
-        _mainBuffer.Write(x, y, text, background, foreground)
-        Me.Refresh()
+        If Not _drawingOverlay Then
+            _mainBuffer.Write(x, y, text, background, foreground)
+            If _autoRefresh Then Me.Refresh()
+        Else
+            _overlayManager.Write(x, y, text, background, foreground)
+        End If
 
     End Sub
 
 
-    Public Sub RemoveOverlay()
+    Public Sub RemoveLastOverlay()
 
         _overlayManager.RemoveOverlay(0)
-        Me.Refresh()
+        If _autoRefresh Then Me.Refresh()
+
+    End Sub
+
+
+    Public Sub RemoveAllOverlays()
+
+        _overlayManager.RemoveAllOverlays()
 
     End Sub
 
@@ -622,6 +647,7 @@
     Public Sub StartOverlay()
 
         'Start the new overlay
+        _drawingOverlay = True
         _overlayManager.StartOverlay()
 
     End Sub
@@ -630,30 +656,9 @@
     Public Sub FinishOverlay()
 
         'Finalise the overlay
+        _drawingOverlay = False
         _overlayManager.FinishOverlay()
-        Me.Refresh()
-
-    End Sub
-
-
-    Public Sub WriteOverlay(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
-
-        'Push a new overlay on
-        _overlayManager.Write(x, y, text, background, foreground)
-
-    End Sub
-
-
-    Public Sub DrawSquareOverlay(x As Integer, y As Integer,
-                              width As Integer, height As Integer,
-                              background As ConsoleColor,
-                              Optional foreground As ConsoleColor = -1,
-                              Optional drawBorderAround As Boolean = False,
-                              Optional borderSize As Integer = 0,
-                              Optional borderColour As ConsoleColor = -1)
-
-        'Draw the square
-        _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+        If _autoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -667,10 +672,12 @@
                               Optional borderColour As ConsoleColor = -1)
 
         'Just draw the square!!!!
-        _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
-
-        'Ensure we don't do two refresh calls
-        If Not drawBorderAround Then Me.Refresh()
+        If Not _drawingOverlay Then
+            _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+            If _autoRefresh Then Me.Refresh()
+        Else
+            _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+        End If
 
     End Sub
 
@@ -681,13 +688,17 @@
                              borderColour As ConsoleColor)
 
         'Draw the border 
-        _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
-        Me.Refresh()
+        If Not _drawingOverlay Then
+            _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
+            If _autoRefresh Then Me.Refresh()
+        Else
+            _overlayManager.DrawBorder(x, y, width, height, borderSize, borderColour)
+        End If
 
     End Sub
 
 
-    Public Sub MoveCursorUntilKeyPress(acceptedKeys() As ConsoleKey)
+    Public Function MoveCursorUntilKeyPress(acceptedKeys() As ConsoleKey) As BattleshipConsole.ConsolePosition
 
         'Use the move cursor position until one of the approved keys is pressed
         Dim moving As Boolean = True
@@ -712,7 +723,9 @@
 
         End If
 
-    End Sub
+        Return _cursorPosition
+
+    End Function
 
 
     Public Function MoveCursor(Optional autoKey As ConsoleKey = -1) As ConsoleKey
@@ -790,7 +803,7 @@
         'Read a single key and return it's value
         Dim key As ConsoleKeyInfo = Console.ReadKey(True)
 
-        'Add to buffer
+        'Add to the top buffer or just the main one
         If Not _overlayManager.AddToTopOverlay(_cursorPosition.X, _cursorPosition.Y, key.KeyChar) Then
             _mainBuffer.Write(_cursorPosition.X, _cursorPosition.Y, key.KeyChar)
         End If
@@ -829,6 +842,8 @@
 
 
     Public Sub Refresh()
+
+        'TODO: Fix cursor overlay bug
 
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()
@@ -890,10 +905,37 @@
         Next
 
         'Set the cursor position and negate the other buffer so it always gets drawn
-        _buffers(_currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = _cursorColour
-        _buffers(1 - _currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = -1
+        If _drawCursor Then
+            _buffers(_currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = _cursorColour
+            _buffers(1 - _currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = -1
+        End If
 
     End Sub
 
+
+    Public Function GetCursorPosition() As BattleshipConsole.ConsolePosition
+        'Give them the cursor of the position
+        Return _cursorPosition
+    End Function
+
+
+    Public Property AutoRefresh As Boolean
+        Set(value As Boolean)
+            _autoRefresh = value
+        End Set
+        Get
+            Return _autoRefresh
+        End Get
+    End Property
+
+
+    Public Property DrawCursor As Boolean
+        Set(value As Boolean)
+            _drawCursor = value
+        End Set
+        Get
+            Return _drawCursor
+        End Get
+    End Property
 
 End Class

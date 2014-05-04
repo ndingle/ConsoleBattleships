@@ -22,7 +22,6 @@ Public Class BattleShip
         Me.Length = length
         Me.Coord = coord
 
-
     End Sub
 
 
@@ -213,5 +212,6 @@ Public Class BattleshipPlayers
         player2 = New BattleshipPlayer("Muncher")
 
     End Sub
+
 
 End Class
