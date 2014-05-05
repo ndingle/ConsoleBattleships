@@ -103,6 +103,14 @@
         End Sub
 
 
+        Sub New(pos As ConsolePosition)
+
+            Me.X = pos.X
+            Me.Y = pos.Y
+
+        End Sub
+
+
         Public Shared Operator =(A As ConsolePosition, B As ConsolePosition) As Boolean
 
             If A.X = B.X And
@@ -151,9 +159,10 @@
 
     Private Class ConsoleBuffer
 
-
         Private _content(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
         Private _isOverlay As Boolean
+        Private _defaultBackgroundColour As ConsoleColor
+        Private _defaultForegroundColour As ConsoleColor
 
 
         Sub New(Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlay As Boolean = False)
@@ -348,6 +357,34 @@
         End Sub
 
 
+        Public Sub EraseContent(x As Integer, y As Integer,
+                                width As Integer, height As Integer)
+
+            'We remove all of the content that is in that section (don't allow regular buffers to be null)
+            If width > 0 And height > 0 Then
+
+                For i = x To x + (width - 1)
+
+                    For j = y To y + (height - 1)
+
+                        If _isOverlay Then
+                            Content(i, j) = Nothing
+                        Else
+                            Content(i, j).Background = _defaultbackgroundColour
+                            Content(i, j).Foreground = _defaultforegroundColour
+                            Content(i, j).Character = " "
+
+                        End If
+
+                    Next
+
+                Next
+
+            End If
+
+        End Sub
+
+
         Public Sub DrawSquare(x As Integer, y As Integer,
                               width As Integer, height As Integer,
                               background As ConsoleColor,
@@ -439,10 +476,36 @@
         Private _overlays As List(Of ConsoleBuffer)
         Private _newOverlay As ConsoleBuffer
 
+        Private _cursorOverlay As ConsoleBuffer
+        Private _cursorPosition As ConsolePosition
+        Private _cursorMinimum As ConsolePosition
+        Private _cursorMaximum As ConsolePosition
+
         Sub New()
 
             'Setup the object
             _overlays = New List(Of ConsoleBuffer)
+
+            'Add in the cursor object at the position 
+            _cursorPosition = New ConsolePosition
+            _cursorMinimum = New ConsolePosition(0, 0)
+            _cursorMaximum = New ConsolePosition(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1)
+
+            'Create the cursor overlay, manually add it and update it
+            _cursorOverlay = New ConsoleBuffer(, , True)
+            _overlays.Add(_cursorOverlay)
+            UpdateCursor(New ConsolePosition(0, 0), True)
+
+        End Sub
+
+
+        Private Sub UpdateCursor(oldCursorPosition As ConsolePosition, Optional force As Boolean = False)
+
+            'Remove the old square and place the new one
+            If oldCursorPosition <> _cursorPosition Or force Then
+                _cursorOverlay.EraseContent(oldCursorPosition.X, oldCursorPosition.Y, 1, 1)
+                _cursorOverlay.DrawSquare(_cursorPosition.X, _cursorPosition.Y, 1, 1, ConsoleColor.Red)
+            End If
 
         End Sub
 
@@ -457,8 +520,8 @@
 
         Public Sub FinishOverlay()
 
-            'OK, now add it on the list
-            _overlays.Add(_newOverlay)
+            'OK, now add it on the list, but underneath the cursor overlay
+            _overlays.Insert(_overlays.Count - 1, _newOverlay)
             _newOverlay = Nothing
 
         End Sub
@@ -527,14 +590,16 @@
                                 If result(i, j).Foreground = -1 Then
                                     result(i, j).Foreground = _overlays(overlay)(i, j).Foreground
                                 End If
-                                If result(i, j).Character = "" Then
+                                If result(i, j).Character = vbNullChar Then
                                     result(i, j).Character = _overlays(overlay)(i, j).Character
                                 End If
+
                             End If
 
                         End If
 
                     Next
+
                 Next
 
             Next
@@ -548,10 +613,10 @@
         Public Function AddToTopOverlay(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1) As Boolean
 
             'Add some text to the top overlay only
-            If _overlays.Count > 0 Then
+            If _overlays.Count > 1 Then
 
                 'Add to the overlay on the top
-                _overlays(_overlays.Count - 1).Write(x, y, text, background, foreground)
+                _overlays(_overlays.Count - 2).Write(x, y, text, background, foreground)
                 Return True
 
             Else
@@ -574,15 +639,132 @@
 
         Public Sub RemoveAllOverlays()
 
-            'Rmove all of the overlays
+            'Rmove all of the overlays and add the cursor back
             _overlays.Clear()
+            _overlays.Add(_cursorOverlay)
 
         End Sub
+
+
+        Public Function MoveCursor(key As ConsoleKey) As Boolean
+
+            Dim oldCursorPosition As New ConsolePosition(_cursorPosition)
+
+            'Do we move the cursor?
+            Select Case key
+                Case ConsoleKey.UpArrow
+                    If _cursorPosition.Y > _cursorMinimum.Y Then _cursorPosition.Y -= 1
+                Case ConsoleKey.DownArrow
+                    If _cursorPosition.Y < _cursorMaximum.Y Then _cursorPosition.Y += 1
+                Case ConsoleKey.LeftArrow
+                    If _cursorPosition.X > _cursorMinimum.X Then _cursorPosition.X -= 1
+                Case ConsoleKey.RightArrow
+                    If _cursorPosition.X < _cursorMaximum.X Then _cursorPosition.X += 1
+            End Select
+
+            'Update the cursor if we need it
+            If oldCursorPosition <> _cursorPosition Then
+                UpdateCursor(oldCursorPosition)
+                Return True
+            End If
+
+            Return False
+
+        End Function
+
+
+        Public Function SetCursorMinimum(x As Integer, y As Integer) As Boolean
+
+            Dim oldCursorPosition As New ConsolePosition(_cursorPosition)
+
+            'Set the mimium coords of the cursor
+            If x >= 0 And x < CONSOLE_WIDTH Then
+                _cursorMinimum.X = x
+                If _cursorPosition.X < x Then _cursorPosition.X = x
+            End If
+
+            If y >= 0 And y < CONSOLE_HEIGHT Then
+                _cursorMinimum.Y = y
+                If _cursorPosition.Y < y Then _cursorPosition.Y = y
+            End If
+
+            If oldCursorPosition <> _cursorPosition Then
+                UpdateCursor(oldCursorPosition)
+                Return True
+            End If
+
+            Return False
+
+        End Function
+
+
+        Public Function SetCursorMaximum(x As Integer, y As Integer) As Boolean
+
+            Dim oldCursorPosition As New ConsolePosition(_cursorPosition)
+
+            'Set the mimium coords of the cursor
+            If x >= 0 And x < CONSOLE_WIDTH Then
+                _cursorMaximum.X = x
+                If _cursorPosition.X > x Then _cursorPosition.X = x
+            End If
+
+            If y >= 0 And y < CONSOLE_HEIGHT Then
+                _cursorMaximum.Y = y
+                If _cursorPosition.Y > y Then _cursorPosition.Y = y
+            End If
+
+            If oldCursorPosition <> _cursorPosition Then
+                UpdateCursor(oldCursorPosition)
+                Return True
+            End If
+
+            Return False
+
+        End Function
+
+
+        Public Function SetCursorPosition(x As Integer, y As Integer) As Boolean
+
+            Dim oldCursorPosition As New ConsolePosition(_cursorPosition)
+
+            'Manually set the location of the cursor
+            If x >= _cursorMinimum.X And x <= _cursorMaximum.X And
+                y >= _cursorMinimum.Y And y <= _cursorMaximum.Y Then
+                _cursorPosition.X = x
+                _cursorPosition.Y = y
+                UpdateCursor(oldCursorPosition)
+                Return True
+            End If
+
+            Return False
+
+        End Function
 
 
         Public Function Count() As Integer
             Return _overlays.Count
         End Function
+
+
+        Public ReadOnly Property CursorPosition As ConsolePosition
+            Get
+                Return _cursorPosition
+            End Get
+        End Property
+
+
+        Public ReadOnly Property CursorMinimum As ConsolePosition
+            Get
+                Return _cursorMinimum
+            End Get
+        End Property
+
+
+        Public ReadOnly Property CursorMaximum As ConsolePosition
+            Get
+                Return _cursorMaximum
+            End Get
+        End Property
 
 
     End Class
@@ -600,9 +782,6 @@
     Private _currentBuffer As Integer = 0
 
     Private _overlayManager As ConsoleOverlayManager
-    Private _cursorPosition As ConsolePosition
-    Private _cursorMinimum As ConsolePosition
-    Private _cursorMaximum As ConsolePosition
 
     Private _backgroundColour As ConsoleColor
     Private _foregroundColour As ConsoleColor
@@ -626,9 +805,6 @@
 
         'Setup other objects
         _overlayManager = New ConsoleOverlayManager()
-        _cursorPosition = New ConsolePosition()
-        _cursorMinimum = New ConsolePosition(0, 0)
-        _cursorMaximum = New ConsolePosition(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1)
 
         'Setup the console object
         Console.CursorVisible = False
@@ -655,7 +831,7 @@
 
     Public Sub RemoveLastOverlay()
 
-        _overlayManager.RemoveOverlay(_overlayManager.count - 1)
+        _overlayManager.RemoveOverlay(_overlayManager.Count - 2)
         If _autoRefresh Then Me.Refresh()
 
     End Sub
@@ -747,7 +923,7 @@
 
         End If
 
-        Return _cursorPosition
+        Return _overlayManager.CursorPosition
 
     End Function
 
@@ -758,17 +934,8 @@
         Dim key As ConsoleKey = autoKey
         If autoKey = -1 Then key = Console.ReadKey.Key
 
-        'Do we move the cursor?
-        Select Case key
-            Case ConsoleKey.UpArrow
-                If _cursorPosition.Y > _cursorMinimum.Y Then _cursorPosition.Y -= 1
-            Case ConsoleKey.DownArrow
-                If _cursorPosition.Y < _cursorMaximum.Y Then _cursorPosition.Y += 1
-            Case ConsoleKey.LeftArrow
-                If _cursorPosition.X > _cursorMinimum.X Then _cursorPosition.X -= 1
-            Case ConsoleKey.RightArrow
-                If _cursorPosition.X < _cursorMaximum.X Then _cursorPosition.X += 1
-        End Select
+        'Do we move the cursor and refresh
+        _overlayManager.MoveCursor(key)
 
         Me.Refresh()
 
@@ -780,15 +947,7 @@
     Public Sub SetCursorMinimum(x As Integer, y As Integer)
 
         'Set the mimium coords of the cursor
-        If x >= 0 And x < CONSOLE_WIDTH Then
-            _cursorMinimum.X = x
-            If _cursorPosition.X < x Then _cursorPosition.X = x
-        End If
-
-        If y >= 0 And y < CONSOLE_HEIGHT Then
-            _cursorMinimum.Y = y
-            If _cursorPosition.Y < y Then _cursorPosition.Y = y
-        End If
+        If _overlayManager.SetCursorMinimum(x, y) And AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -796,15 +955,7 @@
     Public Sub SetCursorMaximum(x As Integer, y As Integer)
 
         'Set the mimium coords of the cursor
-        If x >= 0 And x < CONSOLE_WIDTH Then
-            _cursorMaximum.X = x
-            If _cursorPosition.X > x Then _cursorPosition.X = x
-        End If
-
-        If y >= 0 And y < CONSOLE_HEIGHT Then
-            _cursorMaximum.Y = y
-            If _cursorPosition.Y > y Then _cursorPosition.Y = y
-        End If
+        If _overlayManager.SetCursorMaximum(x, y) And AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -812,12 +963,7 @@
     Public Sub SetCursorPosition(x As Integer, y As Integer)
 
         'Manually set the location of the cursor
-        If x >= _cursorMinimum.X And x <= _cursorMaximum.X And
-            y >= _cursorMinimum.Y And y <= _cursorMaximum.Y Then
-            _cursorPosition.X = x
-            _cursorPosition.Y = y
-            Me.Refresh()
-        End If
+        If _overlayManager.SetCursorPosition(x, y) And AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -828,8 +974,8 @@
         Dim key As ConsoleKeyInfo = Console.ReadKey(True)
 
         'Add to the top buffer or just the main one
-        If Not _overlayManager.AddToTopOverlay(_cursorPosition.X, _cursorPosition.Y, key.KeyChar) Then
-            _mainBuffer.Write(_cursorPosition.X, _cursorPosition.Y, key.KeyChar)
+        If Not _overlayManager.AddToTopOverlay(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar) Then
+            _mainBuffer.Write(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar)
         End If
 
         'Move the cursor if they want
@@ -874,7 +1020,8 @@
         For i = 0 To CONSOLE_WIDTH - 1
             For j = 0 To CONSOLE_HEIGHT - 1
 
-                If _buffers(_currentBuffer)(i, j) <> _buffers(1 - _currentBuffer)(i, j) Then
+                If _buffers(_currentBuffer)(i, j) <> _buffers(1 - _currentBuffer)(i, j) Or
+                    New ConsolePosition(i, j) = _overlayManager.CursorPosition Then
 
                     Console.SetCursorPosition(i, j)
 
@@ -889,7 +1036,7 @@
         Next
 
         'Set the new position and move on, ay
-        Console.SetCursorPosition(_cursorPosition.X, _cursorPosition.Y)
+        Console.SetCursorPosition(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y)
 
         'Switch the buffers
         _currentBuffer = 1 - _currentBuffer
@@ -918,26 +1065,19 @@
                     If overlayBuffer(i, j).Foreground <> -1 Then
                         _buffers(_currentBuffer)(i, j).Foreground = overlayBuffer(i, j).Foreground
                     End If
-                    If overlayBuffer(i, j).Character <> "" Then
+                    If overlayBuffer(i, j).Character <> vbNullChar Then
                         _buffers(_currentBuffer)(i, j).Character = overlayBuffer(i, j).Character
                     End If
                 End If
 
             Next
         Next
-
-        'Set the cursor position and negate the other buffer so it always gets drawn
-        If _drawCursor Then
-            _buffers(_currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = _cursorColour
-            _buffers(1 - _currentBuffer)(_cursorPosition.X, _cursorPosition.Y).Background = -1
-        End If
-
     End Sub
 
 
     Public Function GetCursorPosition() As BattleshipConsole.ConsolePosition
         'Give them the cursor of the position
-        Return _cursorPosition
+        Return _overlayManager.CursorPosition
     End Function
 
 

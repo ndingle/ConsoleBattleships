@@ -14,3 +14,11 @@ C:\Users\nickd_000\Documents\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug
 C:\Users\nickd_000\Documents\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbproj.GenerateResource.Cache
 C:\Users\nickd_000\Documents\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.exe
 C:\Users\nickd_000\Documents\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.pdb
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.xml
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\bin\Debug\ConsoleBattleships.exe
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\bin\Debug\ConsoleBattleships.pdb
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\bin\Debug\ConsoleBattleships.xml
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.Resources.resources
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbproj.GenerateResource.Cache
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.exe
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.pdb
