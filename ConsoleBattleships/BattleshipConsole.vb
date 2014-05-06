@@ -474,6 +474,7 @@
     Private Class ConsoleOverlayManager
 
         Private _overlays As List(Of ConsoleBuffer)
+        Private _overlayNames As List(Of String)
         Private _newOverlay As ConsoleBuffer
 
         Private _cursorOverlay As ConsoleBuffer
@@ -481,10 +482,13 @@
         Private _cursorMinimum As ConsolePosition
         Private _cursorMaximum As ConsolePosition
 
+        Public Const CURSOR_NAME As String = "##CURSOR"
+
         Sub New()
 
             'Setup the object
             _overlays = New List(Of ConsoleBuffer)
+            _overlayNames = New List(Of String)
 
             'Add in the cursor object at the position 
             _cursorPosition = New ConsolePosition
@@ -494,6 +498,7 @@
             'Create the cursor overlay, manually add it and update it
             _cursorOverlay = New ConsoleBuffer(, , True)
             _overlays.Add(_cursorOverlay)
+            _overlayNames.Add(CURSOR_NAME)
             UpdateCursor(New ConsolePosition(0, 0), True)
 
         End Sub
@@ -518,13 +523,19 @@
         End Sub
 
 
-        Public Sub FinishOverlay()
+        Public Function FinishOverlay(name As String) As Boolean
 
-            'OK, now add it on the list, but underneath the cursor overlay
-            _overlays.Insert(_overlays.Count - 1, _newOverlay)
-            _newOverlay = Nothing
+            'OK, now add it on the list, but underneath the cursor overlay, if they provided a bad name or a duplicate, ignore it
+            If name.ToUpper <> CURSOR_NAME And _overlayNames.IndexOf(name.ToUpper) = -1 Then
+                _overlays.Insert(_overlays.Count - 1, _newOverlay)
+                _overlayNames.Insert(_overlayNames.Count - 1, name.ToUpper)
+                _newOverlay = Nothing
+                Return True
+            Else
+                Return False
+            End If
 
-        End Sub
+        End Function
 
 
         Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
@@ -627,11 +638,23 @@
         End Function
 
 
-        Public Sub RemoveOverlay(index As Integer)
+        Public Sub RemoveOverlay(name As String)
+
+            'Find the name
+            If name.ToUpper <> CURSOR_NAME Then
+                Dim index As Integer = _overlayNames.IndexOf(name.ToUpper)
+                Me.RemoveOverlayAt(index)
+            End If
+
+        End Sub
+
+
+        Public Sub RemoveOverlayAt(index As Integer)
 
             'Remove the bloody overlay ay
-            If index >= 0 And index < _overlays.Count Then
+            If index >= 0 And index < _overlays.Count - 1 Then
                 _overlays.RemoveAt(index)
+                _overlayNames.RemoveAt(index)
             End If
 
         End Sub
@@ -642,6 +665,7 @@
             'Rmove all of the overlays and add the cursor back
             _overlays.Clear()
             _overlays.Add(_cursorOverlay)
+            _overlayNames.Add(CURSOR_NAME)
 
         End Sub
 
@@ -821,7 +845,7 @@
         'Write to the main buffer
         If Not _drawingOverlay Then
             _mainBuffer.Write(x, y, text, background, foreground)
-            If _autoRefresh Then Me.Refresh()
+            If AutoRefresh Then Me.Refresh()
         Else
             _overlayManager.Write(x, y, text, background, foreground)
         End If
@@ -831,8 +855,26 @@
 
     Public Sub RemoveLastOverlay()
 
-        _overlayManager.RemoveOverlay(_overlayManager.Count - 2)
-        If _autoRefresh Then Me.Refresh()
+        _overlayManager.RemoveOverlayAt(_overlayManager.Count - 2)
+        If AutoRefresh Then Me.Refresh()
+
+    End Sub
+
+
+    Public Sub RemoveOverlay(name As String)
+
+        _overlayManager.RemoveOverlay(name)
+        If AutoRefresh Then Me.Refresh()
+
+    End Sub
+
+
+    Public Sub RemoveOverlayAt(index As Integer)
+
+        If index >= 0 And index < _overlayManager.Count - 1 Then
+            _overlayManager.RemoveOverlayAt(index)
+            If AutoRefresh Then Me.Refresh()
+        End If
 
     End Sub
 
@@ -853,14 +895,16 @@
     End Sub
 
 
-    Public Sub FinishOverlay()
+    Public Function FinishOverlay(name As String) As Boolean
 
         'Finalise the overlay
         _drawingOverlay = False
-        _overlayManager.FinishOverlay()
-        If _autoRefresh Then Me.Refresh()
+        Dim result As Boolean = _overlayManager.FinishOverlay(name)
+        'Only refresh if something was added
+        If AutoRefresh And result Then Me.Refresh()
+        Return result
 
-    End Sub
+    End Function
 
 
     Public Sub DrawSquare(x As Integer, y As Integer,
@@ -874,7 +918,7 @@
         'Just draw the square!!!!
         If Not _drawingOverlay Then
             _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
-            If _autoRefresh Then Me.Refresh()
+            If AutoRefresh Then Me.Refresh()
         Else
             _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
         End If
@@ -890,7 +934,7 @@
         'Draw the border 
         If Not _drawingOverlay Then
             _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
-            If _autoRefresh Then Me.Refresh()
+            If AutoRefresh Then Me.Refresh()
         Else
             _overlayManager.DrawBorder(x, y, width, height, borderSize, borderColour)
         End If
