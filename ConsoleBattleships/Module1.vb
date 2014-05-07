@@ -44,17 +44,16 @@
         gfx.RemoveOverlay("x marks the spot")
 
         'Draw the ship graphic
-
         gfx.StartOverlay()
         Select Case key.Key
             Case ConsoleKey.UpArrow
-                gfx.DrawSquare(pos.X, pos.Y - shipLength, 1, shipLength, ConsoleColor.Red)
+                gfx.DrawSquare(pos.X, pos.Y - (shipLength - 1), 1, shipLength, 10 + shipCount)
             Case ConsoleKey.DownArrow
-                gfx.DrawSquare(pos.X, pos.Y, 1, shipLength, ConsoleColor.Red)
+                gfx.DrawSquare(pos.X, pos.Y, 1, shipLength, 10 + shipCount)
             Case ConsoleKey.LeftArrow
-                gfx.DrawSquare(pos.X - shipLength, pos.Y, shipLength, 1, ConsoleColor.Red)
+                gfx.DrawSquare(pos.X - (shipLength - 1), pos.Y, shipLength, 1, 10 + shipCount)
             Case ConsoleKey.RightArrow
-                gfx.DrawSquare(pos.X, pos.Y, shipLength, 1, ConsoleColor.Red)
+                gfx.DrawSquare(pos.X, pos.Y, shipLength, 1, 10 + shipCount)
         End Select
         gfx.FinishOverlay("ship" & shipCount)
         shipCount += 1
@@ -91,7 +90,7 @@
     Sub Main()
 
         'Setup the objects
-        'DrawSea()
+        DrawSea()
         PlayersSetup()
         'gfx.Refresh()
 

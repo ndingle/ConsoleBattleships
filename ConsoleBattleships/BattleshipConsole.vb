@@ -806,6 +806,7 @@
     Private _currentBuffer As Integer = 0
 
     Private _overlayManager As ConsoleOverlayManager
+    Private _lastCursorPosition As ConsolePosition
 
     Private _backgroundColour As ConsoleColor
     Private _foregroundColour As ConsoleColor
@@ -829,6 +830,7 @@
 
         'Setup other objects
         _overlayManager = New ConsoleOverlayManager()
+        _lastCursorPosition = New ConsolePosition(_overlayManager.CursorPosition)
 
         'Setup the console object
         Console.CursorVisible = False
@@ -978,8 +980,12 @@
         Dim key As ConsoleKey = autoKey
         If autoKey = -1 Then key = Console.ReadKey.Key
 
+        Dim oldCursorPosition As New ConsolePosition(_overlayManager.CursorPosition)
+
         'Do we move the cursor and refresh
-        _overlayManager.MoveCursor(key)
+        If _overlayManager.MoveCursor(key) Then
+            _lastCursorPosition = oldCursorPosition
+        End If
 
         Me.Refresh()
 
@@ -990,16 +996,27 @@
 
     Public Sub SetCursorMinimum(x As Integer, y As Integer)
 
+        Dim oldCursorPosition As New ConsolePosition(_overlayManager.CursorPosition)
+
         'Set the mimium coords of the cursor
-        If _overlayManager.SetCursorMinimum(x, y) And AutoRefresh Then Me.Refresh()
+        If _overlayManager.SetCursorMinimum(x, y) And AutoRefresh Then
+            _lastCursorPosition = oldCursorPosition
+            Me.Refresh()
+        End If
+
 
     End Sub
 
 
     Public Sub SetCursorMaximum(x As Integer, y As Integer)
 
+        Dim oldCursorPosition As New ConsolePosition(_overlayManager.CursorPosition)
+
         'Set the mimium coords of the cursor
-        If _overlayManager.SetCursorMaximum(x, y) And AutoRefresh Then Me.Refresh()
+        If _overlayManager.SetCursorMaximum(x, y) And AutoRefresh Then
+            _lastCursorPosition = oldCursorPosition
+            Me.Refresh()
+        End If
 
     End Sub
 
@@ -1057,6 +1074,8 @@
 
     Public Sub Refresh()
 
+        'TODO: Fix issue with cursor being the same colour as another overlay
+
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()
 
@@ -1065,7 +1084,8 @@
             For j = 0 To CONSOLE_HEIGHT - 1
 
                 If _buffers(_currentBuffer)(i, j) <> _buffers(1 - _currentBuffer)(i, j) Or
-                    New ConsolePosition(i, j) = _overlayManager.CursorPosition Then
+                    New ConsolePosition(i, j) = _overlayManager.CursorPosition Or
+                    New ConsolePosition(i, j) = _lastCursorPosition Then
 
                     Console.SetCursorPosition(i, j)
 
@@ -1101,7 +1121,8 @@
             For j = 0 To CONSOLE_HEIGHT - 1
 
                 'Ensure there is an overlay
-                If Not overlayBuffer(i, j) Is Nothing Then
+                If overlayBuffer(i, j) IsNot Nothing Then
+
                     'Only take what has a value
                     If overlayBuffer(i, j).Background <> -1 Then
                         _buffers(_currentBuffer)(i, j).Background = overlayBuffer(i, j).Background
@@ -1112,10 +1133,13 @@
                     If overlayBuffer(i, j).Character <> vbNullChar Then
                         _buffers(_currentBuffer)(i, j).Character = overlayBuffer(i, j).Character
                     End If
+
                 End If
 
             Next
+
         Next
+
     End Sub
 
 
