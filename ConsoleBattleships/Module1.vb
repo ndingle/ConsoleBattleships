@@ -1,6 +1,7 @@
 ﻿Module Module1
 
     Dim gfx As New BattleshipConsole(ConsoleColor.Yellow, ConsoleColor.Gray, ConsoleColor.Red)
+    Dim players As New BattleshipPlayers
     Dim shipCount As Integer
 
     Sub DrawSea()
@@ -17,45 +18,146 @@
         gfx.Write(1, 15, "Set first ship location", , ConsoleColor.Red)
         gfx.FinishOverlay("location")
 
-        'Wait for their selection and draw an x at the position
-        Dim pos As BattleshipConsole.ConsolePosition = gfx.MoveCursorUntilKeyPress(New ConsoleKey() {ConsoleKey.Enter})
-        gfx.StartOverlay()
-        gfx.Write(pos.X, pos.Y, "X", , ConsoleColor.Black)
-        gfx.FinishOverlay("x marks the spot")
+        Dim hit As Boolean = False
+        Dim pos As BattleshipConsole.ConsolePosition
 
-        'Write the message to the ser
+        'Loop until we have no extra hits
+        Do
 
-        gfx.StartOverlay()
-        gfx.Write(1, 15, "Ship faces: Left, right, up, down", , ConsoleColor.Red)
-        gfx.FinishOverlay("ship facing")
+            'Incase we repeat
+            gfx.RemoveOverlay("x marks the spot")
+            gfx.RemoveOverlay("ship facing")
 
-        'Wait for the correct key
-        Dim key As ConsoleKeyInfo
-        While key.Key <> ConsoleKey.UpArrow And
-             key.Key <> ConsoleKey.DownArrow And
-             key.Key <> ConsoleKey.LeftArrow And
-             key.Key <> ConsoleKey.RightArrow
+            'Wait for their selection and draw an x at the position
+            pos = gfx.MoveCursorUntilKeyPress(New ConsoleKey() {ConsoleKey.Enter})
+            gfx.StartOverlay()
+            gfx.Write(pos.X, pos.Y, "X", , ConsoleColor.Black)
+            gfx.FinishOverlay("x marks the spot")
 
-            key = gfx.ReadKey(False)
+            'Write the message to the ser
 
-        End While
+            gfx.StartOverlay()
+            gfx.Write(1, 15, "Ship faces: Left, right, up, down", , ConsoleColor.Red)
+            gfx.FinishOverlay("ship facing")
 
-        'Remove the X
-        gfx.RemoveOverlay("x marks the spot")
+            'Wait for the correct key
+            Dim key As ConsoleKeyInfo
+            key = New ConsoleKeyInfo
+            hit = False
 
-        'Draw the ship graphic
-        gfx.StartOverlay()
-        Select Case key.Key
-            Case ConsoleKey.UpArrow
-                gfx.DrawSquare(pos.X, pos.Y - (shipLength - 1), 1, shipLength, 10 + shipCount)
-            Case ConsoleKey.DownArrow
-                gfx.DrawSquare(pos.X, pos.Y, 1, shipLength, 10 + shipCount)
-            Case ConsoleKey.LeftArrow
-                gfx.DrawSquare(pos.X - (shipLength - 1), pos.Y, shipLength, 1, 10 + shipCount)
-            Case ConsoleKey.RightArrow
-                gfx.DrawSquare(pos.X, pos.Y, shipLength, 1, 10 + shipCount)
-        End Select
-        gfx.FinishOverlay("ship" & shipCount)
+            While key.Key <> ConsoleKey.UpArrow And
+                    key.Key <> ConsoleKey.DownArrow And
+                    key.Key <> ConsoleKey.LeftArrow And
+                    key.Key <> ConsoleKey.RightArrow
+
+                key = gfx.ReadKey(False)
+
+            End While
+
+            'Remove the X
+            gfx.RemoveOverlay("x marks the spot")
+
+            Select Case key.Key
+                Case ConsoleKey.UpArrow
+
+                    For j = pos.Y - (shipLength - 1) To pos.Y
+
+                        'Ensure this coord is in the boundaries
+                        If gfx.IsCoordInMouseBounds(pos.X, j) Then
+
+                            If players.players(playerIndex - 1).CheckHit(pos.X, j, False) Then
+                                hit = True
+                                Exit For
+                            End If
+
+                        Else
+                            hit = True
+                            Exit For
+                        End If
+
+                    Next
+
+                Case ConsoleKey.DownArrow
+
+                    For j = pos.Y To pos.Y + (shipLength - 1)
+
+                        'Ensure this coord is in the boundaries
+                        If gfx.IsCoordInMouseBounds(pos.X, j) Then
+
+                            If players.players(playerIndex - 1).CheckHit(pos.X, j, False) Then
+                                hit = True
+                                Exit For
+                            End If
+
+                        Else
+                            hit = True
+                            Exit For
+                        End If
+
+                    Next
+
+                Case ConsoleKey.LeftArrow
+
+                    For i = pos.X - (shipLength - 1) To pos.X
+
+                        If gfx.IsCoordInMouseBounds(i, pos.Y) Then
+
+                            If players.players(playerIndex - 1).CheckHit(i, pos.Y, False) Then
+                                hit = True
+                                Exit For
+                            End If
+
+                        Else
+                            hit = True
+                            Exit For
+                        End If
+
+                    Next
+
+                Case ConsoleKey.RightArrow
+
+                    For i = pos.X To pos.X + (shipLength - 1)
+
+                        If gfx.IsCoordInMouseBounds(i, pos.Y) Then
+
+                            If players.players(playerIndex - 1).CheckHit(i, pos.Y, False) Then
+                                hit = True
+                                Exit For
+                            End If
+
+                        Else
+                            hit = True
+                            Exit For
+                        End If
+
+                    Next
+
+            End Select
+
+            'Draw the ship graphic
+            If Not hit Then
+
+                gfx.StartOverlay()
+                Select Case key.Key
+                    Case ConsoleKey.UpArrow
+                        gfx.DrawSquare(pos.X, pos.Y - (shipLength - 1), 1, shipLength, 10 + shipCount)
+                    Case ConsoleKey.DownArrow
+                        gfx.DrawSquare(pos.X, pos.Y, 1, shipLength, 10 + shipCount)
+                    Case ConsoleKey.LeftArrow
+                        gfx.DrawSquare(pos.X - (shipLength - 1), pos.Y, shipLength, 1, 10 + shipCount)
+                    Case ConsoleKey.RightArrow
+                        gfx.DrawSquare(pos.X, pos.Y, shipLength, 1, 10 + shipCount)
+                End Select
+                gfx.FinishOverlay("ship" & shipCount)
+
+            End If
+
+        Loop Until hit = False
+
+        'Add in the new ship
+        players.players(playerIndex - 1).AddShip(shipLength, pos)
+
+        'Increase the ship count
         shipCount += 1
 
     End Sub
@@ -64,7 +166,9 @@
     Sub PlayerSetup(index As Integer)
 
         'Setup the ships for the first character
+        gfx.StartOverlay()
         gfx.Write(1, 13, "Player " & index & " Ship Setup", , ConsoleColor.Black)
+        gfx.FinishOverlay("Player" & index)
 
         gfx.SetCursorMinimum(1, 1)
         gfx.SetCursorMaximum(10, 10)
@@ -76,12 +180,23 @@
         ShipSetup(index, 4)
         ShipSetup(index, 5)
 
+        'Reset the ship counts
+        shipCount = 0
+
+        gfx.RemoveOverlay("Player" & index)
+        gfx.StartOverlay()
+        gfx.RemoveOverlay("ship facing")
+        gfx.Write(1, 13, "Player " & index & " setup complete! Press enter to continue.")
+        gfx.FinishOverlay("PlayerComplete")
+        gfx.ReadLine()
+
     End Sub
 
 
     Sub PlayersSetup()
 
         PlayerSetup(1)
+        gfx.RemoveAllOverlays()
         'PlayerSetup(2)
 
     End Sub
@@ -92,9 +207,6 @@
         'Setup the objects
         DrawSea()
         PlayersSetup()
-        'gfx.Refresh()
-
-        gfx.MoveCursorUntilKeyPress(New ConsoleKey() {ConsoleKey.Enter})
         
     End Sub
 

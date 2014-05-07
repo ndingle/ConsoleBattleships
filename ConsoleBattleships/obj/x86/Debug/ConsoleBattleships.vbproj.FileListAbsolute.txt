@@ -22,3 +22,4 @@ C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbproj.GenerateResource.Cache
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.exe
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.pdb
+C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbprojResolveAssemblyReference.cache

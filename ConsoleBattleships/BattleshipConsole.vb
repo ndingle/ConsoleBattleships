@@ -582,27 +582,27 @@
             Dim result As New ConsoleBuffer(, , True)
 
             'Go backwards as the top is most important
-            For overlay = _overlays.Count - 1 To 0 Step -1
+            For overlayCount = _overlays.Count - 1 To 0 Step -1
 
                 For i = 0 To CONSOLE_WIDTH - 1
                     For j = 0 To CONSOLE_HEIGHT - 1
 
                         'See if the cell is something
-                        If Not _overlays(overlay)(i, j) Is Nothing Then
+                        If Not _overlays(overlayCount)(i, j) Is Nothing Then
 
                             'Add it to our new return buffer
                             If result(i, j) Is Nothing Then
-                                result(i, j) = New ConsoleCharacter(_overlays(overlay)(i, j))
+                                result(i, j) = New ConsoleCharacter(_overlays(overlayCount)(i, j))
                             Else
                                 'Copy if any cells are empty
                                 If result(i, j).Background = -1 Then
-                                    result(i, j).Background = _overlays(overlay)(i, j).Background
+                                    result(i, j).Background = _overlays(overlayCount)(i, j).Background
                                 End If
                                 If result(i, j).Foreground = -1 Then
-                                    result(i, j).Foreground = _overlays(overlay)(i, j).Foreground
+                                    result(i, j).Foreground = _overlays(overlayCount)(i, j).Foreground
                                 End If
                                 If result(i, j).Character = vbNullChar Then
-                                    result(i, j).Character = _overlays(overlay)(i, j).Character
+                                    result(i, j).Character = _overlays(overlayCount)(i, j).Character
                                 End If
 
                             End If
@@ -787,6 +787,17 @@
         Public ReadOnly Property CursorMaximum As ConsolePosition
             Get
                 Return _cursorMaximum
+            End Get
+        End Property
+
+
+        Public ReadOnly Property Overlay(name As String) As ConsoleBuffer
+            Get
+                If _overlayNames.IndexOf(name.ToUpper) > -1 Then
+                    Return _overlays(_overlayNames.IndexOf(name.ToUpper))
+                Else
+                    Return Nothing
+                End If
             End Get
         End Property
 
@@ -1027,6 +1038,40 @@
         If _overlayManager.SetCursorPosition(x, y) And AutoRefresh Then Me.Refresh()
 
     End Sub
+
+
+    Public ReadOnly Property CursorMinimum() As ConsolePosition
+        Get
+            Return _overlayManager.CursorMinimum
+        End Get
+    End Property
+
+
+    Public ReadOnly Property CursorMaximum() As ConsolePosition
+        Get
+            Return _overlayManager.CursorMaximum
+        End Get
+    End Property
+
+
+    Public Function IsCoordInMouseBounds(x As Integer, y As Integer) As Boolean
+        Return IsCoordInMouseBounds(New ConsolePosition(x, y))
+    End Function
+
+
+    Public Function IsCoordInMouseBounds(pos As ConsolePosition) As Boolean
+
+        'If the coord provided is in the mouse coords
+        If pos.X >= CursorMinimum.X And
+            pos.X <= CursorMaximum.X And
+            pos.Y >= CursorMinimum.Y And
+            pos.Y <= CursorMaximum.Y Then
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
 
 
     Public Function ReadKey(Optional moveCursor As Boolean = False) As ConsoleKeyInfo

@@ -20,29 +20,34 @@ Public Class BattleShip
         _coord = New BattleshipConsole.ConsolePosition()
         _hits = New List(Of BattleshipConsole.ConsolePosition)
         Me.Length = length
-        Me.Coord = coord
+        Me.Coord = New BattleshipConsole.ConsolePosition(coord)
 
     End Sub
 
 
-    Private Function CheckPosition(ByVal pos As BattleshipConsole.ConsolePosition, ByVal pos2 As BattleshipConsole.ConsolePosition) As Boolean
+    Private Function CheckPosition(ByVal pos As BattleshipConsole.ConsolePosition, ByVal pos2 As BattleshipConsole.ConsolePosition, Optional shooting As Boolean = True) As Boolean
 
         'Is it is the same coord?
         If pos.X = pos2.X And
             pos.Y = pos2.Y Then
 
-            'Ensure we have not hit this before
-            If Not _hits.Contains(pos) Then
+            If shooting Then
 
-                _hits.Add(pos)
+                'Ensure we have not hit this before
+                If Not _hits.Contains(pos) Then
 
-                'Check if we are dead
-                If _hits.Count = Length Then
-                    Dead = True
+                    _hits.Add(pos)
+
+                    'Check if we are dead
+                    If _hits.Count = Length Then
+                        Dead = True
+                    End If
+
+                    Return True
+
                 End If
-
+            Else
                 Return True
-
             End If
 
         End If
@@ -52,7 +57,7 @@ Public Class BattleShip
     End Function
 
 
-    Public Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition) As Boolean
+    Public Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition, Optional shooting As Boolean = True) As Boolean
 
         'Check if the position would be in the ship's placement
         If Facing = BattelshipShipFacing.Right Then
@@ -61,7 +66,7 @@ Public Class BattleShip
             For i = Coord.X To Coord.X + Length - 1
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y)) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y), shooting) Then
                     Return True
                 End If
 
@@ -73,7 +78,7 @@ Public Class BattleShip
             For i = Coord.X To Coord.X - (Length - 1)
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y)) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y), shooting) Then
                     Return True
                 End If
 
@@ -85,7 +90,7 @@ Public Class BattleShip
             For i = Coord.Y To Coord.Y - (Length - 1)
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i)) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i), shooting) Then
                     Return True
                 End If
 
@@ -97,7 +102,7 @@ Public Class BattleShip
             For i = Coord.Y To Coord.Y + (Length - 1)
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i)) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i), shooting) Then
                     Return True
                 End If
 
@@ -183,12 +188,12 @@ Public Class BattleshipPlayer
 
     End Function
 
-    Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition) As Boolean
+    Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition, Optional shooting As Boolean = True) As Boolean
 
         'Loop through the ships
         For Each s As BattleShip In _ships
 
-            If s.CheckHit(pos) Then
+            If s.CheckHit(pos, shooting) Then
                 Return True
             End If
 
@@ -198,18 +203,25 @@ Public Class BattleshipPlayer
 
     End Function
 
+
+    Public Function CheckHit(x As Integer, y As Integer, Optional shooting As Boolean = True) As Boolean
+
+        'Overload this awesome function!
+        Return CheckHit(New BattleshipConsole.ConsolePosition(x, y), shooting)
+
+    End Function
+
 End Class
 
 Public Class BattleshipPlayers
 
-    Public player1 As BattleshipPlayer
-    Public player2 As BattleshipPlayer
+    Public players(1) As BattleshipPlayer
 
     Sub New()
 
         'TODO: Debug
-        player1 = New BattleshipPlayer("Poodle")
-        player2 = New BattleshipPlayer("Muncher")
+        players(0) = New BattleshipPlayer("Poodle")
+        players(1) = New BattleshipPlayer("Muncher")
 
     End Sub
 
