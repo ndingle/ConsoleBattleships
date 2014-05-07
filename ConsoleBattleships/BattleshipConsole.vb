@@ -664,6 +664,7 @@
 
             'Rmove all of the overlays and add the cursor back
             _overlays.Clear()
+            _overlayNames.Clear()
             _overlays.Add(_cursorOverlay)
             _overlayNames.Add(CURSOR_NAME)
 
@@ -1005,6 +1006,28 @@
     End Function
 
 
+    Public Sub WaitForKey(keys() As ConsoleKey)
+
+        'Do we have any keys firstly
+        If keys.Length > 0 Then
+
+            While True
+
+                'Time to wait
+                Dim key As ConsoleKey = Me.ReadKey(False, False).Key
+
+                'Go through our list and find if it's there
+                For Each k As ConsoleKey In keys
+                    If k = key Then Exit Sub
+                Next
+
+            End While
+
+        End If
+
+    End Sub
+
+
     Public Sub SetCursorMinimum(x As Integer, y As Integer)
 
         Dim oldCursorPosition As New ConsolePosition(_overlayManager.CursorPosition)
@@ -1074,14 +1097,16 @@
     End Function
 
 
-    Public Function ReadKey(Optional moveCursor As Boolean = False) As ConsoleKeyInfo
+    Public Function ReadKey(Optional moveCursor As Boolean = False, Optional draw As Boolean = True) As ConsoleKeyInfo
 
         'Read a single key and return it's value
         Dim key As ConsoleKeyInfo = Console.ReadKey(True)
 
-        'Add to the top buffer or just the main one
-        If Not _overlayManager.AddToTopOverlay(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar) Then
-            _mainBuffer.Write(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar)
+        If draw Then
+            'Add to the top buffer or just the main one
+            If Not _overlayManager.AddToTopOverlay(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar) Then
+                _mainBuffer.Write(_overlayManager.CursorPosition.X, _overlayManager.CursorPosition.Y, key.KeyChar)
+            End If
         End If
 
         'Move the cursor if they want

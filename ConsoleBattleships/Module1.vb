@@ -15,7 +15,7 @@
 
         'Message the user
         gfx.StartOverlay()
-        gfx.Write(1, 15, "Set first ship location", , ConsoleColor.Red)
+        gfx.Write(1, 15, "Set ship location", , ConsoleColor.Red)
         gfx.FinishOverlay("location")
 
         Dim hit As Boolean = False
@@ -45,14 +45,15 @@
             key = New ConsoleKeyInfo
             hit = False
 
-            While key.Key <> ConsoleKey.UpArrow And
-                    key.Key <> ConsoleKey.DownArrow And
-                    key.Key <> ConsoleKey.LeftArrow And
-                    key.Key <> ConsoleKey.RightArrow
+            'Loop until we hit the correct key
+            Do
 
-                key = gfx.ReadKey(False)
+                key = gfx.ReadKey(False, False)
 
-            End While
+            Loop Until key.Key = ConsoleKey.UpArrow Or
+                    key.Key = ConsoleKey.DownArrow Or
+                    key.Key = ConsoleKey.LeftArrow Or
+                    key.Key = ConsoleKey.RightArrow
 
             'Remove the X
             gfx.RemoveOverlay("x marks the spot")
@@ -184,22 +185,35 @@
         shipCount = 0
 
         gfx.RemoveOverlay("Player" & index)
+        gfx.RemoveOverlay("location")
         gfx.StartOverlay()
         gfx.RemoveOverlay("ship facing")
         gfx.Write(1, 13, "Player " & index & " setup complete! Press enter to continue.")
         gfx.FinishOverlay("PlayerComplete")
-        gfx.ReadLine()
+        gfx.WaitForKey(New ConsoleKey() {ConsoleKey.Enter})
 
     End Sub
 
 
     Sub PlayersSetup()
 
+        'Setup the players
         PlayerSetup(1)
         gfx.RemoveAllOverlays()
-        'PlayerSetup(2)
+        PlayerSetup(2)
+        gfx.RemoveAllOverlays()
+
+        'Tell them we're done!
+        gfx.StartOverlay()
+        gfx.Write(1, 13, "All players setup!\nPress enter to start the game", , ConsoleColor.Red)
+        gfx.FinishOverlay("complete")
+
+        gfx.WaitForKey(New ConsoleKey() {ConsoleKey.Enter})
 
     End Sub
+
+
+
 
 
     Sub Main()

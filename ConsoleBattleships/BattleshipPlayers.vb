@@ -75,7 +75,7 @@ Public Class BattleShip
         ElseIf Facing = BattelshipShipFacing.Left Then
 
             'Move to the left
-            For i = Coord.X To Coord.X - (Length - 1)
+            For i = Coord.X To Coord.X - (Length - 1) Step -1
 
                 'Check just that position
                 If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y), shooting) Then
@@ -87,7 +87,7 @@ Public Class BattleShip
         ElseIf Facing = BattelshipShipFacing.Up Then
 
             'Move to the up
-            For i = Coord.Y To Coord.Y - (Length - 1)
+            For i = Coord.Y To Coord.Y - (Length - 1) Step -1
 
                 'Check just that position
                 If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i), shooting) Then
