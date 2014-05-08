@@ -19,6 +19,7 @@
         gfx.FinishOverlay("location")
 
         Dim hit As Boolean = False
+        Dim facing As BattelshipShipFacing
         Dim pos As BattleshipConsole.ConsolePosition
 
         'Loop until we have no extra hits
@@ -142,12 +143,16 @@
                 Select Case key.Key
                     Case ConsoleKey.UpArrow
                         gfx.DrawSquare(pos.X, pos.Y - (shipLength - 1), 1, shipLength, 10 + shipCount)
+                        facing = BattelshipShipFacing.Up
                     Case ConsoleKey.DownArrow
                         gfx.DrawSquare(pos.X, pos.Y, 1, shipLength, 10 + shipCount)
+                        facing = BattelshipShipFacing.Down
                     Case ConsoleKey.LeftArrow
                         gfx.DrawSquare(pos.X - (shipLength - 1), pos.Y, shipLength, 1, 10 + shipCount)
+                        facing = BattelshipShipFacing.Left
                     Case ConsoleKey.RightArrow
                         gfx.DrawSquare(pos.X, pos.Y, shipLength, 1, 10 + shipCount)
+                        facing = BattelshipShipFacing.Right
                 End Select
                 gfx.FinishOverlay("ship" & shipCount)
 
@@ -156,7 +161,7 @@
         Loop Until hit = False
 
         'Add in the new ship
-        players.players(playerIndex - 1).AddShip(shipLength, pos)
+        players.players(playerIndex - 1).AddShip(facing, shipLength, pos)
 
         'Increase the ship count
         shipCount += 1

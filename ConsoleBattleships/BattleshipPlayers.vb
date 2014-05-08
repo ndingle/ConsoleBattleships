@@ -14,13 +14,15 @@ Public Class BattleShip
     Private _hits As List(Of BattleshipConsole.ConsolePosition)
 
 
-    Sub New(Optional ByVal length As Integer = 1, Optional ByVal coord As BattleshipConsole.ConsolePosition = Nothing)
+    Sub New(ByVal facing As BattelshipShipFacing, Optional ByVal length As Integer = 1, Optional ByVal coord As BattleshipConsole.ConsolePosition = Nothing)
 
         'Setup the ship's resources
         _coord = New BattleshipConsole.ConsolePosition()
         _hits = New List(Of BattleshipConsole.ConsolePosition)
+        Me.Facing = facing
         Me.Length = length
         Me.Coord = New BattleshipConsole.ConsolePosition(coord)
+
 
     End Sub
 
@@ -63,7 +65,7 @@ Public Class BattleShip
         If Facing = BattelshipShipFacing.Right Then
 
             'Move to the right
-            For i = Coord.X To Coord.X + Length - 1
+            For i = Coord.X To Coord.X + (Length - 1)
 
                 'Check just that position
                 If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y), shooting) Then
@@ -75,7 +77,7 @@ Public Class BattleShip
         ElseIf Facing = BattelshipShipFacing.Left Then
 
             'Move to the left
-            For i = Coord.X To Coord.X - (Length - 1) Step -1
+            For i = Coord.X - (Length - 1) To Coord.X
 
                 'Check just that position
                 If CheckPosition(pos, New BattleshipConsole.ConsolePosition(i, Coord.Y), shooting) Then
@@ -87,10 +89,10 @@ Public Class BattleShip
         ElseIf Facing = BattelshipShipFacing.Up Then
 
             'Move to the up
-            For i = Coord.Y To Coord.Y - (Length - 1) Step -1
+            For j = Coord.Y - (Length - 1) To Coord.Y
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i), shooting) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, j), shooting) Then
                     Return True
                 End If
 
@@ -99,10 +101,10 @@ Public Class BattleShip
         ElseIf _facing = BattelshipShipFacing.Down Then
 
             'Move to the down
-            For i = Coord.Y To Coord.Y + (Length - 1)
+            For j = Coord.Y To Coord.Y + (Length - 1)
 
                 'Check just that position
-                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, i), shooting) Then
+                If CheckPosition(pos, New BattleshipConsole.ConsolePosition(Coord.X, j), shooting) Then
                     Return True
                 End If
 
@@ -180,10 +182,10 @@ Public Class BattleshipPlayer
 
     End Sub
 
-    Function AddShip(ByVal length As Integer, ByVal pos As BattleshipConsole.ConsolePosition) As Integer
+    Function AddShip(ByVal facing As BattelshipShipFacing, ByVal length As Integer, ByVal pos As BattleshipConsole.ConsolePosition) As Integer
 
         'Create a new ship and add it into the list
-        _ships.Add(New BattleShip(length, pos))
+        _ships.Add(New BattleShip(facing, length, pos))
         Return _ships.Count
 
     End Function

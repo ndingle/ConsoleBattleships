@@ -23,3 +23,11 @@ C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.exe
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.pdb
 C:\Users\Nicholas\Dropbox\Projects\VB\ConsoleBattleships\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbprojResolveAssemblyReference.cache
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.exe
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.xml
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.pdb
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\bin\Debug\ConsoleBattleships.exe
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\bin\Debug\ConsoleBattleships.pdb
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\bin\Debug\ConsoleBattleships.xml
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.Resources.resources
+C:\Users\nicholas.dingle2\Documents\ConsoleBattleshipsv2\ConsoleBattleships\obj\x86\Debug\ConsoleBattleships.vbproj.GenerateResource.Cache
