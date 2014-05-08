@@ -157,15 +157,16 @@
     End Class
 
 
-    Private Class ConsoleBuffer
+    Public Class ConsoleBuffer
 
         Private _content(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
         Private _isOverlay As Boolean
+        Private _isActive As Boolean
         Private _defaultBackgroundColour As ConsoleColor
         Private _defaultForegroundColour As ConsoleColor
 
 
-        Sub New(Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlay As Boolean = False)
+        Sub New(Optional ByVal background As ConsoleColor = -1, Optional ByVal foreground As ConsoleColor = -1, Optional ByVal overlay As Boolean = False)
 
             'If the user wants to create a fresh buffer, otherwise leave it blank for better memory usage
             If Not overlay Then
@@ -180,11 +181,25 @@
 
             'Ensure we remember this
             _isOverlay = overlay
+            _isActive = True
 
         End Sub
 
 
-        Public Sub CopyBuffer(buffer As ConsoleBuffer)
+        Public Property IsActive As Boolean
+            Set(ByVal value As Boolean)
+                'We can only disable if it's an overlay
+                If _isOverlay Then
+                    _isActive = value
+                End If
+            End Set
+            Get
+                Return _isActive
+            End Get
+        End Property
+
+
+        Public Sub CopyBuffer(ByVal buffer As ConsoleBuffer)
 
             'Ensure we have a buffer object
             If Not buffer Is Nothing Then
@@ -211,7 +226,7 @@
         End Sub
 
 
-        Private Function SplitString(text As String, Optional delimiter As String = "\n") As String()
+        Private Function SplitString(ByVal text As String, Optional ByVal delimiter As String = "\n") As String()
 
             'Cut the strings up and return them
             If Not text Is Nothing Then
@@ -236,7 +251,7 @@
         End Function
 
 
-        Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
+        Public Sub Write(ByVal x As Integer, ByVal y As Integer, ByVal text As String, Optional ByVal background As ConsoleColor = -1, Optional ByVal foreground As ConsoleColor = -1)
 
             'Split the strings first
             Dim lines() As String = SplitString(text, "\n")
@@ -278,10 +293,10 @@
         End Sub
 
 
-        Public Sub DrawBorder(x As Integer, y As Integer,
-                              width As Integer, height As Integer,
-                              borderSize As Integer,
-                              borderColour As ConsoleColor)
+        Public Sub DrawBorder(ByVal x As Integer, ByVal y As Integer,
+                              ByVal width As Integer, ByVal height As Integer,
+                              ByVal borderSize As Integer,
+                              ByVal borderColour As ConsoleColor)
 
             '
             'Check we have good values
@@ -357,8 +372,8 @@
         End Sub
 
 
-        Public Sub EraseContent(x As Integer, y As Integer,
-                                width As Integer, height As Integer)
+        Public Sub EraseContent(ByVal x As Integer, ByVal y As Integer,
+                                ByVal width As Integer, ByVal height As Integer)
 
             'We remove all of the content that is in that section (don't allow regular buffers to be null)
             If width > 0 And height > 0 Then
@@ -370,8 +385,8 @@
                         If _isOverlay Then
                             Content(i, j) = Nothing
                         Else
-                            Content(i, j).Background = _defaultbackgroundColour
-                            Content(i, j).Foreground = _defaultforegroundColour
+                            Content(i, j).Background = _defaultBackgroundColour
+                            Content(i, j).Foreground = _defaultForegroundColour
                             Content(i, j).Character = " "
 
                         End If
@@ -385,13 +400,13 @@
         End Sub
 
 
-        Public Sub DrawSquare(x As Integer, y As Integer,
-                              width As Integer, height As Integer,
-                              background As ConsoleColor,
-                              Optional foreground As ConsoleColor = -1,
-                              Optional drawBorderAround As Boolean = False,
-                              Optional borderSize As Integer = 0,
-                              Optional borderColour As ConsoleColor = -1)
+        Public Sub DrawSquare(ByVal x As Integer, ByVal y As Integer,
+                              ByVal width As Integer, ByVal height As Integer,
+                              ByVal background As ConsoleColor,
+                              Optional ByVal foreground As ConsoleColor = -1,
+                              Optional ByVal drawBorderAround As Boolean = False,
+                              Optional ByVal borderSize As Integer = 0,
+                              Optional ByVal borderColour As ConsoleColor = -1)
 
             'Draw the square first
             For j = y To y + height - 1
@@ -429,7 +444,7 @@
         End Sub
 
 
-        Public Function InBounds(x As Integer, y As Integer) As Boolean
+        Public Function InBounds(ByVal x As Integer, ByVal y As Integer) As Boolean
 
             If x >= 0 And x <= _content.GetUpperBound(0) And
                 y >= 0 And y <= _content.GetUpperBound(1) Then
@@ -441,17 +456,17 @@
         End Function
 
 
-        Default Public Property Content(pos As ConsolePosition) As ConsoleCharacter
+        Default Public Property Content(ByVal pos As ConsolePosition) As ConsoleCharacter
             Get
                 Return Content(pos.X, pos.Y)
             End Get
-            Set(value As ConsoleCharacter)
+            Set(ByVal value As ConsoleCharacter)
                 Content(pos.X, pos.Y) = value
             End Set
         End Property
 
 
-        Default Public Property Content(i As Integer, j As Integer) As ConsoleCharacter
+        Default Public Property Content(ByVal i As Integer, ByVal j As Integer) As ConsoleCharacter
             Get
                 'Ensure the coords in the bounds
                 If InBounds(i, j) Then
@@ -460,7 +475,7 @@
                     Return Nothing
                 End If
             End Get
-            Set(value As ConsoleCharacter)
+            Set(ByVal value As ConsoleCharacter)
                 If InBounds(i, j) Then
                     _content(i, j) = value
                 End If
@@ -584,34 +599,39 @@
             'Go backwards as the top is most important
             For overlayCount = _overlays.Count - 1 To 0 Step -1
 
-                For i = 0 To CONSOLE_WIDTH - 1
-                    For j = 0 To CONSOLE_HEIGHT - 1
+                'Ensure that the overlay is active before we gather its contents
+                If _overlays(overlayCount).IsActive Then
 
-                        'See if the cell is something
-                        If Not _overlays(overlayCount)(i, j) Is Nothing Then
+                    For i = 0 To CONSOLE_WIDTH - 1
+                        For j = 0 To CONSOLE_HEIGHT - 1
 
-                            'Add it to our new return buffer
-                            If result(i, j) Is Nothing Then
-                                result(i, j) = New ConsoleCharacter(_overlays(overlayCount)(i, j))
-                            Else
-                                'Copy if any cells are empty
-                                If result(i, j).Background = -1 Then
-                                    result(i, j).Background = _overlays(overlayCount)(i, j).Background
-                                End If
-                                If result(i, j).Foreground = -1 Then
-                                    result(i, j).Foreground = _overlays(overlayCount)(i, j).Foreground
-                                End If
-                                If result(i, j).Character = vbNullChar Then
-                                    result(i, j).Character = _overlays(overlayCount)(i, j).Character
+                            'See if the cell is something
+                            If Not _overlays(overlayCount)(i, j) Is Nothing Then
+
+                                'Add it to our new return buffer
+                                If result(i, j) Is Nothing Then
+                                    result(i, j) = New ConsoleCharacter(_overlays(overlayCount)(i, j))
+                                Else
+                                    'Copy if any cells are empty
+                                    If result(i, j).Background = -1 Then
+                                        result(i, j).Background = _overlays(overlayCount)(i, j).Background
+                                    End If
+                                    If result(i, j).Foreground = -1 Then
+                                        result(i, j).Foreground = _overlays(overlayCount)(i, j).Foreground
+                                    End If
+                                    If result(i, j).Character = vbNullChar Then
+                                        result(i, j).Character = _overlays(overlayCount)(i, j).Character
+                                    End If
+
                                 End If
 
                             End If
 
-                        End If
+                        Next
 
                     Next
 
-                Next
+                End If
 
             Next
 
@@ -627,7 +647,22 @@
             If _overlays.Count > 1 Then
 
                 'Add to the overlay on the top
-                _overlays(_overlays.Count - 2).Write(x, y, text, background, foreground)
+                Dim i As Integer
+
+                'Loop through the overlays to ensure they are active
+                For i = _overlays.Count - 2 To 0 Step -1
+                    If _overlays(i).IsActive Then
+                        _overlays(i).Write(x, y, text, background, foreground)
+                        i = 1
+                        Exit For
+                    End If
+                Next
+
+                'Did we not find any active overlays
+                If i = 0 Then
+                    Return False
+                End If
+
                 Return True
 
             Else
@@ -1073,6 +1108,13 @@
     Public ReadOnly Property CursorMaximum() As ConsolePosition
         Get
             Return _overlayManager.CursorMaximum
+        End Get
+    End Property
+
+
+    Public ReadOnly Property Overlay(ByVal name As String) As ConsoleBuffer
+        Get
+            Return _overlayManager.Overlay(name)
         End Get
     End Property
 

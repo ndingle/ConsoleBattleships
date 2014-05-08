@@ -218,7 +218,31 @@
     End Sub
 
 
+    Sub GameSetup()
 
+        'Ships underneath all
+        For i = 0 To 1
+            For j = 0 To 4
+                'Create the base overlays and disable them
+                gfx.StartOverlay()
+                gfx.FinishOverlay("player" & i & "ship" & j)
+                gfx.Overlay("player" & i & "ship" & j).IsActive = False
+            Next
+        Next
+
+        'Setup the announcement label
+        gfx.StartOverlay()
+        gfx.FinishOverlay("announcement")
+
+
+    End Sub
+
+
+    Sub PlayerShot(ByVal index As Integer)
+
+
+
+    End Sub
 
 
     Sub Main()

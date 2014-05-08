@@ -174,6 +174,7 @@ Public Class BattleshipPlayer
     Private _name As String
     Private _ships As List(Of BattleShip)
 
+
     Sub New(Optional ByVal name As String = "")
 
         'Setup objects
@@ -181,6 +182,7 @@ Public Class BattleshipPlayer
         _ships = New List(Of BattleShip)
 
     End Sub
+
 
     Function AddShip(ByVal facing As BattelshipShipFacing, ByVal length As Integer, ByVal pos As BattleshipConsole.ConsolePosition) As Integer
 
@@ -190,18 +192,19 @@ Public Class BattleshipPlayer
 
     End Function
 
-    Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition, Optional shooting As Boolean = True) As Boolean
+
+    Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition, Optional ByVal shooting As Boolean = True) As Integer
 
         'Loop through the ships
-        For Each s As BattleShip In _ships
+        For i = 0 To _ships.Count - 1
 
-            If s.CheckHit(pos, shooting) Then
-                Return True
+            If _ships(i).CheckHit(pos, shooting) Then
+                Return i
             End If
 
         Next
 
-        Return False
+        Return -1
 
     End Function
 
@@ -212,6 +215,7 @@ Public Class BattleshipPlayer
         Return CheckHit(New BattleshipConsole.ConsolePosition(x, y), shooting)
 
     End Function
+
 
 End Class
 
