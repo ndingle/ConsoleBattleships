@@ -157,11 +157,11 @@
     End Class
 
 
-    Public Class ConsoleBuffer
+    Private Class ConsoleBuffer
 
         Private _content(CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1) As ConsoleCharacter
         Private _isOverlay As Boolean
-        Private _isActive As Boolean
+        Private _hidden As Boolean
         Private _defaultBackgroundColour As ConsoleColor
         Private _defaultForegroundColour As ConsoleColor
 
@@ -181,20 +181,20 @@
 
             'Ensure we remember this
             _isOverlay = overlay
-            _isActive = True
+            _hidden = False
 
         End Sub
 
 
-        Public Property IsActive As Boolean
+        Public Property Hidden As Boolean
             Set(ByVal value As Boolean)
                 'We can only disable if it's an overlay
                 If _isOverlay Then
-                    _isActive = value
+                    _hidden = value
                 End If
             End Set
             Get
-                Return _isActive
+                Return _hidden
             End Get
         End Property
 
@@ -530,10 +530,10 @@
         End Sub
 
 
-        Public Sub StartOverlay()
+        Public Sub StartOverlay(Optional defaultBackground As ConsoleColor = -1, Optional defaultForeground As ConsoleColor = -1)
 
             'Create a blank overlay
-            _newOverlay = New ConsoleBuffer(, , True)
+            _newOverlay = New ConsoleBuffer(defaultBackground, defaultForeground, True)
 
         End Sub
 
@@ -600,7 +600,7 @@
             For overlayCount = _overlays.Count - 1 To 0 Step -1
 
                 'Ensure that the overlay is active before we gather its contents
-                If _overlays(overlayCount).IsActive Then
+                If Not _overlays(overlayCount).Hidden Then
 
                     For i = 0 To CONSOLE_WIDTH - 1
                         For j = 0 To CONSOLE_HEIGHT - 1
@@ -651,7 +651,7 @@
 
                 'Loop through the overlays to ensure they are active
                 For i = _overlays.Count - 2 To 0 Step -1
-                    If _overlays(i).IsActive Then
+                    If Not _overlays(i).Hidden Then
                         _overlays(i).Write(x, y, text, background, foreground)
                         i = 1
                         Exit For
@@ -889,15 +889,30 @@
     End Sub
 
 
-    Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1)
+    Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlayName As String = "")
 
         'Write to the main buffer
-        If Not _drawingOverlay Then
+        If Not _drawingOverlay And overlayName = "" Then
             _mainBuffer.Write(x, y, text, background, foreground)
-            If AutoRefresh Then Me.Refresh()
         Else
-            _overlayManager.Write(x, y, text, background, foreground)
+
+            If overlayName <> "" Then
+
+                'If we have a good overlayname then draw the new text
+                If _overlayManager.Overlay(overlayName) IsNot Nothing Then
+                    _overlayManager.Overlay(overlayName).Write(x, y, text, background, foreground)
+                End If
+
+            Else
+
+                'OK we have no name so redirect to the overlay
+                _overlayManager.Write(x, y, text, background, foreground)
+
+            End If
+
         End If
+
+        If AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -935,11 +950,11 @@
     End Sub
 
 
-    Public Sub StartOverlay()
+    Public Sub StartOverlay(Optional defaultBackground As ConsoleColor = -1, Optional defaultForeground As ConsoleColor = -1)
 
         'Start the new overlay
         _drawingOverlay = True
-        _overlayManager.StartOverlay()
+        _overlayManager.StartOverlay(defaultBackground, defaultForeground)
 
     End Sub
 
@@ -962,15 +977,34 @@
                               Optional foreground As ConsoleColor = -1,
                               Optional drawBorderAround As Boolean = False,
                               Optional borderSize As Integer = 0,
-                              Optional borderColour As ConsoleColor = -1)
+                              Optional borderColour As ConsoleColor = -1,
+                              Optional overlayName As String = "")
 
         'Just draw the square!!!!
-        If Not _drawingOverlay Then
+        If Not _drawingOverlay and overlayName = "" Then
             _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
-            If AutoRefresh Then Me.Refresh()
+
         Else
-            _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+
+            'Check if we have an overlayName
+            If overlayName <> "" Then
+
+                'Check if it's all good first and draw the square
+                If _overlayManager.Overlay(overlayName) IsNot Nothing Then
+                    _overlayManager.Overlay(overlayName).DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+                End If
+
+            Else
+
+                'No name, default!
+                _overlayManager.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
+
+            End If
+
+
         End If
+
+        If AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -978,15 +1012,29 @@
     Public Sub DrawBorder(x As Integer, y As Integer,
                              width As Integer, height As Integer,
                              borderSize As Integer,
-                             borderColour As ConsoleColor)
+                             borderColour As ConsoleColor,
+                             Optional overlayName As String = "")
 
         'Draw the border 
         If Not _drawingOverlay Then
             _mainBuffer.DrawBorder(x, y, width, height, borderSize, borderColour)
-            If AutoRefresh Then Me.Refresh()
         Else
-            _overlayManager.DrawBorder(x, y, width, height, borderSize, borderColour)
+
+            'Check if we have an overlayName
+            If overlayName <> "" Then
+
+                'Check if it's all good first and draw the square
+                If _overlayManager.Overlay(overlayName) IsNot Nothing Then
+                    _overlayManager.Overlay(overlayName).DrawBorder(x, y, width, height, borderSize, borderColour)
+                End If
+
+            Else
+                _overlayManager.DrawBorder(x, y, width, height, borderSize, borderColour)
+            End If
+
         End If
+
+        If AutoRefresh Then Me.Refresh()
 
     End Sub
 
@@ -1112,7 +1160,7 @@
     End Property
 
 
-    Public ReadOnly Property Overlay(ByVal name As String) As ConsoleBuffer
+    Private ReadOnly Property Overlay(ByVal name As String) As ConsoleBuffer
         Get
             Return _overlayManager.Overlay(name)
         End Get
@@ -1186,8 +1234,6 @@
 
     Public Sub Refresh()
 
-        'TODO: Fix issue with cursor being the same colour as another overlay
-
         'Bring all the buffers together into the current buffer
         ConsolidateBuffers()
 
@@ -1253,6 +1299,34 @@
         Next
 
     End Sub
+
+
+    Public Function HideOverlay(name As String) As Boolean
+
+        'Ensure it exists
+        If _overlayManager.Overlay(name) IsNot Nothing Then
+            'Hide the overlay
+            _overlayManager.Overlay(name).Hidden = True
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
+
+
+    Public Function ShowOverlay(name As String) As Boolean
+
+        'Ensure it exists first
+        If _overlayManager.Overlay(name) IsNot Nothing Then
+            'Show the overlay then
+            _overlayManager.Overlay(name).Hidden = False
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
 
 
     Public Function GetCursorPosition() As BattleshipConsole.ConsolePosition

@@ -173,13 +173,14 @@ Public Class BattleshipPlayer
 
     Private _name As String
     Private _ships As List(Of BattleShip)
-
+    Private _shots As List(Of BattleshipConsole.ConsolePosition)
 
     Sub New(Optional ByVal name As String = "")
 
         'Setup objects
         _name = name
         _ships = New List(Of BattleShip)
+        _shots = New List(Of BattleshipConsole.ConsolePosition)
 
     End Sub
 
@@ -204,6 +205,11 @@ Public Class BattleshipPlayer
 
         Next
 
+        'If we are shooting then record the shot
+        If shooting Then
+            _shots.Add(New BattleshipConsole.ConsolePosition(pos))
+        End If
+
         Return -1
 
     End Function
@@ -213,6 +219,26 @@ Public Class BattleshipPlayer
 
         'Overload this awesome function!
         Return CheckHit(New BattleshipConsole.ConsolePosition(x, y), shooting)
+
+    End Function
+
+
+    Public Function IsAlreadyShot(pos As BattleshipConsole.ConsolePosition) As Boolean
+
+        'Check we have a the shot first
+        If _shots.IndexOf(pos) >= 0 Then
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
+
+
+    Public Function IsAlreadyShot(x As Integer, y As Integer) As Boolean
+
+        'Check we have a the shot first
+        Return IsAlreadyShot(New BattleshipConsole.ConsolePosition(x, y))
 
     End Function
 
