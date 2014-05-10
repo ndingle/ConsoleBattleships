@@ -36,9 +36,18 @@ Public Class BattleShip
             If shooting Then
 
                 'Ensure we have not hit this before
-                If Not _hits.Contains(pos) Then
+                Dim contains As Boolean = False
+                For Each h As BattleshipConsole.ConsolePosition In _hits
+                    If h = pos Then
+                        contains = True
+                        Exit For
+                    End If
+                Next
 
-                    _hits.Add(pos)
+                'If not, then add it and check if the ship died
+                If Not contains Then
+
+                    _hits.Add(New BattleshipConsole.ConsolePosition(pos))
 
                     'Check if we are dead
                     If _hits.Count = Length Then
@@ -197,25 +206,23 @@ Public Class BattleshipPlayer
     Function CheckHit(ByVal pos As BattleshipConsole.ConsolePosition, Optional ByVal shooting As Boolean = True) As Integer
 
         'Loop through the ships
+        Dim result As Integer = -1
         For i = 0 To _ships.Count - 1
 
             If _ships(i).CheckHit(pos, shooting) Then
-                Return i
+                'Remember where we are up to and then exit early
+                result = i
+                Exit For
             End If
 
         Next
 
-        'If we are shooting then record the shot
-        If shooting Then
-            _shots.Add(New BattleshipConsole.ConsolePosition(pos))
-        End If
-
-        Return -1
+        Return result
 
     End Function
 
 
-    Public Function CheckHit(x As Integer, y As Integer, Optional shooting As Boolean = True) As Boolean
+    Public Function CheckHit(x As Integer, y As Integer, Optional shooting As Boolean = True) As Integer
 
         'Overload this awesome function!
         Return CheckHit(New BattleshipConsole.ConsolePosition(x, y), shooting)
@@ -223,22 +230,40 @@ Public Class BattleshipPlayer
     End Function
 
 
-    Public Function IsAlreadyShot(pos As BattleshipConsole.ConsolePosition) As Boolean
+    Public Function AddShot(pos As BattleshipConsole.ConsolePosition) As Boolean
 
-        'Check we have a the shot first
-        If _shots.IndexOf(pos) >= 0 Then
-            Return True
-        Else
-            Return False
-        End If
+        'Check if the position already exists 
+        For Each p As BattleshipConsole.ConsolePosition In _shots
+            If p = pos Then
+                Return False
+            End If
+        Next
+
+        'Add the shot
+        _shots.Add(New BattleshipConsole.ConsolePosition(pos))
+        Return True
 
     End Function
 
 
-    Public Function IsAlreadyShot(x As Integer, y As Integer) As Boolean
+    Public Function AddShot(x As Integer, y As Integer) As Boolean
 
         'Check we have a the shot first
-        Return IsAlreadyShot(New BattleshipConsole.ConsolePosition(x, y))
+        Return AddShot(New BattleshipConsole.ConsolePosition(x, y))
+
+    End Function
+
+
+    Public Function GetDeadShips() As Integer
+
+        'Go through and count the dead ships
+        Dim count As Integer = 0
+
+        For Each ship As BattleShip In _ships
+            If ship.Dead Then count += 1
+        Next
+
+        Return count
 
     End Function
 

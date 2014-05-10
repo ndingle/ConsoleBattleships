@@ -400,6 +400,27 @@
         End Sub
 
 
+        Public Sub EraseAllContent()
+
+            'Go through all the characters
+            For i = 0 To CONSOLE_WIDTH - 1
+                For j = 0 To CONSOLE_HEIGHT - 1
+
+                    'Overlay can be nothing
+                    If _isOverlay Then
+                        Content(i, j) = Nothing
+                    Else
+                        Content(i, j).Background = _defaultBackgroundColour
+                        Content(i, j).Foreground = _defaultForegroundColour
+                        Content(i, j).Character = " "
+                    End If
+
+                Next
+            Next
+
+        End Sub
+
+
         Public Sub DrawSquare(ByVal x As Integer, ByVal y As Integer,
                               ByVal width As Integer, ByVal height As Integer,
                               ByVal background As ConsoleColor,
@@ -889,6 +910,40 @@
     End Sub
 
 
+    Public Sub EraseContent(x As Integer, y As Integer, width As Integer, height As Integer, Optional overlayName As String = "")
+
+        'Erase areas of buffer
+        If overlayName = "" Then
+
+            _mainBuffer.EraseContent(x, y, width, height)
+
+        Else
+
+            'Check if the overlay exists
+            If _overlayManager.Overlay(overlayName) IsNot Nothing Then
+                _overlayManager.Overlay(overlayName).EraseContent(x, y, width, height)
+            End If
+
+        End If
+
+    End Sub
+
+
+    Public Sub EraseAllContent(Optional overlayName As String = "")
+
+        'Remove the content from the buffer
+        If overlayName = "" Then
+            _mainBuffer.EraseAllContent()
+        Else
+            'Check if the overlay exists
+            If _overlayManager.Overlay(overlayName) IsNot Nothing Then
+                _overlayManager.Overlay(overlayName).EraseAllContent()
+            End If
+        End If
+
+    End Sub
+
+
     Public Sub Write(x As Integer, y As Integer, text As String, Optional background As ConsoleColor = -1, Optional foreground As ConsoleColor = -1, Optional overlayName As String = "")
 
         'Write to the main buffer
@@ -981,7 +1036,7 @@
                               Optional overlayName As String = "")
 
         'Just draw the square!!!!
-        If Not _drawingOverlay and overlayName = "" Then
+        If Not _drawingOverlay And overlayName = "" Then
             _mainBuffer.DrawSquare(x, y, width, height, background, foreground, drawBorderAround, borderSize, borderColour)
 
         Else
