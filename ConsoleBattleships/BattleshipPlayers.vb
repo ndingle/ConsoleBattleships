@@ -180,14 +180,14 @@ End Class
 
 Public Class BattleshipPlayer
 
-    Private _name As String
+    Private _cursor As BattleshipConsole.ConsolePosition
     Private _ships As List(Of BattleShip)
     Private _shots As List(Of BattleshipConsole.ConsolePosition)
 
-    Sub New(Optional ByVal name As String = "")
+    Sub New(x As Integer, y As Integer)
 
         'Setup objects
-        _name = name
+        _cursor = New BattleshipConsole.ConsolePosition(x, y)
         _ships = New List(Of BattleShip)
         _shots = New List(Of BattleshipConsole.ConsolePosition)
 
@@ -268,19 +268,52 @@ Public Class BattleshipPlayer
     End Function
 
 
+    Public Function IsDefeated() As Boolean
+
+        'All of the ships dead?
+        If GetDeadShips() = _ships.Count Then
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
+
+
+    Public Property Cursor As BattleshipConsole.ConsolePosition
+        Set(value As BattleshipConsole.ConsolePosition)
+            If value IsNot Nothing Then
+                _cursor = value
+            End If
+        End Set
+        Get
+            Return _cursor
+        End Get
+    End Property
+
+
 End Class
 
 Public Class BattleshipPlayers
 
-    Public players(1) As BattleshipPlayer
+    Private _players(1) As BattleshipPlayer
 
-    Sub New()
 
-        'TODO: Debug
-        players(0) = New BattleshipPlayer("Poodle")
-        players(1) = New BattleshipPlayer("Muncher")
+    Public Sub SetupPlayer(playerIndex As Integer, x As Integer, y As Integer)
+
+        _players(playerIndex) = New BattleshipPlayer(x, y)
 
     End Sub
 
+
+    Public ReadOnly Property Player(index As Integer) As BattleshipPlayer
+        Get
+            If index >= 0 And index <= 1 Then
+                Return _players(index)
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
 
 End Class

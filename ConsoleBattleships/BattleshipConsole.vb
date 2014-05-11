@@ -1201,6 +1201,14 @@
     End Sub
 
 
+    Public Sub SetCursorPosition(pos As ConsolePosition)
+
+        'Manually set the location of the cursor
+        Me.SetCursorPosition(pos.X, pos.Y)
+
+    End Sub
+
+
     Public ReadOnly Property CursorMinimum() As ConsolePosition
         Get
             Return _overlayManager.CursorMinimum
